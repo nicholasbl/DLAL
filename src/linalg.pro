@@ -17,6 +17,7 @@ SOURCES += \
     main.cpp \
     matrix.cpp \
     matrix_operations.cpp \
+    matrix_transform.cpp \
     quat.cpp \
     vector.cpp
 

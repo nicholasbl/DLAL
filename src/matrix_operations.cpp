@@ -1,33 +1,12 @@
 #include "doctest.h"
 #include "include/mat_operations.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
+#include "test_common.h"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/norm.hpp>
 
 using namespace dct;
 
-template <class T, size_t C, size_t R>
-bool is_same(MatrixCore<T, C, R> const&         a,
-             glm::mat<int(C), int(R), T> const& b) {
-    // weirdness due to how glm specifies their templates
-    // static_assert(C == M);
-    for (size_t i = 0; i < C * R; ++i) {
-        T delta =
-            std::abs(a.data()[i] - glm::value_ptr(b)[static_cast<int>(i)]);
-        if (std::numeric_limits<T>::epsilon() < delta) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <class T>
-bool is_same(T const& a, T const& b) {
-    return a == b;
-}
 
 template <class T, size_t C, size_t R, class Function>
 bool matrix_op_test(std::array<T, C * R> const& a, Function f) {

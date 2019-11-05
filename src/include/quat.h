@@ -90,10 +90,22 @@ QuaternionCore<T> normalize(QuaternionCore<T> const& q) {
     return QuaternionCore<T>(normalize(q.storage));
 }
 
-// Conversion ==================================================================
+template <class T>
+QuaternionCore<T> conjugate(QuaternionCore<T> const& q) {
+    return QuaternionCore<T>(q.w, -Vector<T, 3>(q.storage));
+}
 
 template <class T>
-MatrixCore<T, 3, 3> mat3_from_quaternion(QuaternionCore<T> const& q) {
+QuaternionCore<T> inverse(QuaternionCore<T> const& q) {
+    return conjugate(q) / dot(q.storage, q.storage);
+}
+
+// Conversion ==================================================================
+
+
+/// \brief Convert a UNIT quaternion to a mat3
+template <class T>
+MatrixCore<T, 3, 3> mat3_from_unit_quaternion(QuaternionCore<T> const& q) {
     T const qxx(q.x * q.x);
     T const qyy(q.y * q.y);
     T const qzz(q.z * q.z);
@@ -119,11 +131,12 @@ MatrixCore<T, 3, 3> mat3_from_quaternion(QuaternionCore<T> const& q) {
     ret[2][0] = two * (qxz + qwy);
     ret[2][1] = two * (qyz - qwx);
     ret[2][2] = one - two * (qxx + qyy);
+
     return ret;
 }
 
 template <class T>
-MatrixCore<T, 4, 4> mat4_from_quaternion(QuaternionCore<T> const& q) {
+MatrixCore<T, 4, 4> mat4_from_unit_quaternion(QuaternionCore<T> const& q) {
 
     T const qxx(q.x * q.x);
     T const qyy(q.y * q.y);

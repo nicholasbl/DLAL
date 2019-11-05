@@ -114,7 +114,9 @@ inline void TMatrix::rotate(float radians, float x, float y, float z) {
     m_mat = dct::rotate(m_mat, radians, v);
 }
 
-inline void TMatrix::rotate(Quat const& q) { m_mat *= mat4_from_quaternion(q); }
+inline void TMatrix::rotate(Quat const& q) {
+    m_mat *= mat4_from_unit_quaternion(normalize(q));
+}
 
 inline void TMatrix::scale(float x, float y, float z) {
     dct::scale_in_place(m_mat, { x, y, z });
@@ -189,7 +191,6 @@ inline TMatrix::operator std::array<float, 16>() const {
 }
 
 inline float* TMatrix::data() { return m_mat.data(); }
-
 
 inline float const* TMatrix::data() const { return m_mat.data(); }
 
