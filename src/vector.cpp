@@ -1,32 +1,12 @@
 #include "doctest.h"
-#include "include/vec.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
+#include "test_common.h"
 
-#include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 
 #include <iostream>
 
 using namespace dct;
-
-template <class T, size_t N, int M>
-bool is_same(Vector<T, N> const& a, glm::vec<M, T> const& b) {
-    // weirdness due to how glm specifies their templates
-    static_assert(N == M);
-    for (size_t i = 0; i < N; ++i) {
-        T delta = std::abs(a[i] - b[static_cast<int>(i)]);
-        if (std::numeric_limits<T>::epsilon() < delta) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <class T, size_t N>
-bool operator==(Vector<T, N> const& a, glm::vec<N, T> const& b) {
-    return is_same(a, b);
-}
 
 template <class T>
 bool is(Vector<T, 2> const& a, T x, T y) {

@@ -98,6 +98,23 @@ public:
     }
 
 public:
+    static MatrixCore const& identity() {
+        static constexpr MatrixCore ret = []() {
+            MatrixCore l;
+
+            for (size_t c = 0; c < C; c++) {
+                for (size_t r = 0; r < R; r++) {
+                    l[c][r] = (r == c) ? T(1) : T(0);
+                }
+            }
+
+            return l;
+        }();
+
+        return ret;
+    }
+
+public:
     // storage is contiguous, and size is equivalent to a single array
     T*       data() { return reinterpret_cast<T*>(this); }
     T const* data() const { return reinterpret_cast<T const*>(this); }
@@ -113,6 +130,15 @@ public:
 using Mat2 = MatrixCore<float, 3, 3>;
 using Mat3 = MatrixCore<float, 3, 3>;
 using Mat4 = MatrixCore<float, 4, 4>;
+
+// Common ======================================================================
+
+inline void set_mat_to_identity(Mat4& mat) {
+    mat[0] = { 1, 0, 0, 0 };
+    mat[1] = { 0, 1, 0, 0 };
+    mat[2] = { 0, 0, 1, 0 };
+    mat[3] = { 0, 0, 0, 1 };
+}
 
 // Unary =======================================================================
 template <class T, size_t C, size_t R>
@@ -367,6 +393,11 @@ bool is_any(MatrixCore<bool, C, R> const& a) {
     } else if constexpr (C == 4) {
         return is_any(a[0]) or is_any(a[1]) or is_any(a[2]) or is_any(a[3]);
     }
+}
+
+template <class T, size_t C, size_t R>
+bool is_equal(MatrixCore<T, C, R> const& a, MatrixCore<T, C, R> const& b) {
+    return is_all(a == b);
 }
 
 } // namespace dct

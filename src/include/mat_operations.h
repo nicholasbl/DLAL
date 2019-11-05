@@ -76,34 +76,34 @@ inline T determinant(MatrixCore<T, 2, 2> const& m) {
 template <class T>
 inline T determinant(MatrixCore<T, 3, 3> const& m) {
 
-    const T a = m[0][0];
-    const T b = m[1][0];
-    const T c = m[2][0];
+    T const a = m[0][0];
+    T const b = m[1][0];
+    T const c = m[2][0];
 
-    const T d = m[0][1];
-    const T e = m[1][1];
-    const T f = m[2][1];
+    T const d = m[0][1];
+    T const e = m[1][1];
+    T const f = m[2][1];
 
-    const T g = m[0][2];
-    const T h = m[1][2];
-    const T i = m[2][2];
+    T const g = m[0][2];
+    T const h = m[1][2];
+    T const i = m[2][2];
 
     return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
 }
 
 template <class T>
 inline T determinant(MatrixCore<T, 4, 4> const& m) {
-    T a = m[2][2] * m[3][3] - m[3][2] * m[2][3];
-    T b = m[2][1] * m[3][3] - m[3][1] * m[2][3];
-    T c = m[2][1] * m[3][2] - m[3][1] * m[2][2];
-    T d = m[2][0] * m[3][3] - m[3][0] * m[2][3];
-    T e = m[2][0] * m[3][2] - m[3][0] * m[2][2];
-    T f = m[2][0] * m[3][1] - m[3][0] * m[2][1];
+    T const a = m[2][2] * m[3][3] - m[3][2] * m[2][3];
+    T const b = m[2][1] * m[3][3] - m[3][1] * m[2][3];
+    T const c = m[2][1] * m[3][2] - m[3][1] * m[2][2];
+    T const d = m[2][0] * m[3][3] - m[3][0] * m[2][3];
+    T const e = m[2][0] * m[3][2] - m[3][0] * m[2][2];
+    T const f = m[2][0] * m[3][1] - m[3][0] * m[2][1];
 
-    Vector<T, 4> coeffs(+(m[1][1] * a - m[1][2] * b + m[1][3] * c),
-                        -(m[1][0] * a - m[1][2] * d + m[1][3] * e),
-                        +(m[1][0] * b - m[1][1] * d + m[1][3] * f),
-                        -(m[1][0] * c - m[1][1] * e + m[1][2] * f));
+    Vector<T, 4> const coeffs(+(m[1][1] * a - m[1][2] * b + m[1][3] * c),
+                              -(m[1][0] * a - m[1][2] * d + m[1][3] * e),
+                              +(m[1][0] * b - m[1][1] * d + m[1][3] * f),
+                              -(m[1][0] * c - m[1][1] * e + m[1][2] * f));
 
     return component_sum(m[0] * coeffs);
 }
@@ -111,7 +111,7 @@ inline T determinant(MatrixCore<T, 4, 4> const& m) {
 
 template <class T>
 auto inverse(MatrixCore<T, 2, 2> const& m) {
-    T one_over_det = static_cast<T>(1) / determinant(m);
+    T const one_over_det = static_cast<T>(1) / determinant(m);
 
     return MatrixCore<T, 2, 2>(m[1][1] * one_over_det,
                                -m[0][1] * one_over_det,
@@ -121,7 +121,7 @@ auto inverse(MatrixCore<T, 2, 2> const& m) {
 
 template <class T>
 auto inverse(MatrixCore<T, 3, 3> const& m) {
-    T one_over_det = static_cast<T>(1) / determinant(m);
+    T const one_over_det = static_cast<T>(1) / determinant(m);
 
     MatrixCore<T, 3, 3> ret;
     ret[0][0] = +(m[1][1] * m[2][2] - m[2][1] * m[1][2]) * one_over_det;
@@ -157,6 +157,7 @@ inline __m128 _matrix2x2_mult_adj(__m128 vec1, __m128 vec2) {
 inline auto transform_inverse(Mat4 const& m) {
     using namespace vector_detail;
     // implementation based off Eric Zhang's
+    // https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
     constexpr float SMALL_VALUE = 1E-8F;
 
     Mat4 ret;
@@ -193,48 +194,48 @@ inline auto inverse(Mat4 const& m) {
     // implementation based off Eric Zhang's
     // https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
 
-    const __m128 A = shuffle<0, 1, 0, 1>(m.as_vec[0], m.as_vec[1]);
-    const __m128 B = shuffle<2, 3, 2, 3>(m.as_vec[0], m.as_vec[1]);
-    const __m128 C = shuffle<0, 1, 0, 1>(m.as_vec[2], m.as_vec[3]);
-    const __m128 D = shuffle<2, 3, 2, 3>(m.as_vec[2], m.as_vec[3]);
+    __m128 const A = shuffle<0, 1, 0, 1>(m.as_vec[0], m.as_vec[1]);
+    __m128 const B = shuffle<2, 3, 2, 3>(m.as_vec[0], m.as_vec[1]);
+    __m128 const C = shuffle<0, 1, 0, 1>(m.as_vec[2], m.as_vec[3]);
+    __m128 const D = shuffle<2, 3, 2, 3>(m.as_vec[2], m.as_vec[3]);
 
-    __m128 detSub = (shuffle<0, 2, 4, 6>(m.as_vec[0], m.as_vec[2]) *
-                     shuffle<1, 3, 5, 7>(m.as_vec[1], m.as_vec[3])) -
-                    (shuffle<1, 3, 5, 7>(m.as_vec[0], m.as_vec[2]) *
-                     shuffle<0, 2, 4, 6>(m.as_vec[1], m.as_vec[3]));
-    __m128 detA = swizzle<0>(detSub);
-    __m128 detB = swizzle<1>(detSub);
-    __m128 detC = swizzle<2>(detSub);
-    __m128 detD = swizzle<3>(detSub);
+    __m128 const det_sub = (shuffle<0, 2, 4, 6>(m.as_vec[0], m.as_vec[2]) *
+                            shuffle<1, 3, 5, 7>(m.as_vec[1], m.as_vec[3])) -
+                           (shuffle<1, 3, 5, 7>(m.as_vec[0], m.as_vec[2]) *
+                            shuffle<0, 2, 4, 6>(m.as_vec[1], m.as_vec[3]));
+    __m128 const det_A = swizzle<0>(det_sub);
+    __m128 const det_B = swizzle<1>(det_sub);
+    __m128 const det_C = swizzle<2>(det_sub);
+    __m128 const det_D = swizzle<3>(det_sub);
 
     __m128 D_C = _matrix2x2_adj_mult(D, C);
     __m128 A_B = _matrix2x2_adj_mult(A, B);
-    __m128 X_  = (detD * A) - _matrix2x2_multiply(B, D_C);
-    __m128 Y_  = (detB * C) - _matrix2x2_mult_adj(D, A_B);
-    __m128 Z_  = (detC * B) - _matrix2x2_mult_adj(A, D_C);
-    __m128 W_  = (detA * D) - _matrix2x2_multiply(C, A_B);
+    __m128 X   = (det_D * A) - _matrix2x2_multiply(B, D_C);
+    __m128 Y   = (det_B * C) - _matrix2x2_mult_adj(D, A_B);
+    __m128 Z   = (det_C * B) - _matrix2x2_mult_adj(A, D_C);
+    __m128 W   = (det_A * D) - _matrix2x2_multiply(C, A_B);
 
-    __m128 detM = (detA * detD);
-    detM        = (detM + (detB * detC));
+    __m128 det_M = (det_A * det_D);
+    det_M        = (det_M + (det_B * det_C));
 
     __m128 trace = (A_B * swizzle<0, 2, 1, 3>(D_C));
     trace        = _mm_hadd_ps(trace, trace);
     trace        = _mm_hadd_ps(trace, trace);
-    detM         = (detM - trace);
+    det_M        = (det_M - trace);
 
-    const __m128 adjSignMask = { 1.f, -1.f, -1.f, 1.f };
-    __m128       rDetM       = (adjSignMask / detM);
+    __m128 const adj_sign_mask = { 1.f, -1.f, -1.f, 1.f };
+    __m128 const i_det_M       = (adj_sign_mask / det_M);
 
-    X_ = (X_ * rDetM);
-    Y_ = (Y_ * rDetM);
-    Z_ = (Z_ * rDetM);
-    W_ = (W_ * rDetM);
+    X = (X * i_det_M);
+    Y = (Y * i_det_M);
+    Z = (Z * i_det_M);
+    W = (W * i_det_M);
 
     Mat4 ret;
-    ret.as_vec[0] = shuffle<3, 1, 7, 5>(X_, Y_);
-    ret.as_vec[1] = shuffle<2, 0, 6, 4>(X_, Y_);
-    ret.as_vec[2] = shuffle<3, 1, 7, 5>(Z_, W_);
-    ret.as_vec[3] = shuffle<2, 0, 6, 4>(Z_, W_);
+    ret.as_vec[0] = shuffle<3, 1, 7, 5>(X, Y);
+    ret.as_vec[1] = shuffle<2, 0, 6, 4>(X, Y);
+    ret.as_vec[2] = shuffle<3, 1, 7, 5>(Z, W);
+    ret.as_vec[3] = shuffle<2, 0, 6, 4>(Z, W);
 
     return ret;
 }

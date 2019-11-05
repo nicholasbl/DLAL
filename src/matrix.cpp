@@ -1,61 +1,12 @@
 #include "doctest.h"
-#include "include/mat.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
+#include "test_common.h"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/norm.hpp>
 
 #include <iostream>
 
 using namespace dct;
-
-template <class T, size_t C, size_t R>
-bool is_same(MatrixCore<T, C, R> const& a, std::array<T, C * R> const& b) {
-    // weirdness due to how glm specifies their templates
-    // static_assert(C == M);
-    for (size_t i = 0; i < C * R; ++i) {
-        T delta = std::abs(a.data()[i] - b[i]);
-        if (std::numeric_limits<T>::epsilon() < delta) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <class T, size_t R>
-bool is_same(Vector<T, R> const& a, glm::vec<int(R), T> const& b) {
-    // weirdness due to how glm specifies their templates
-    // static_assert(C == M);
-    for (size_t i = 0; i < R; ++i) {
-        T delta = std::abs(a[i] - b[i]);
-        if (std::numeric_limits<T>::epsilon() < delta) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <class T, size_t C, size_t R>
-bool is_same(MatrixCore<T, C, R> const&         a,
-             glm::mat<int(C), int(R), T> const& b) {
-    // weirdness due to how glm specifies their templates
-    // static_assert(C == M);
-    for (size_t i = 0; i < C * R; ++i) {
-        T delta =
-            std::abs(a.data()[i] - glm::value_ptr(b)[static_cast<int>(i)]);
-        if (std::numeric_limits<T>::epsilon() < delta) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <class T>
-bool is_same(T const& a, T const& b) {
-    return a == b;
-}
 
 template <class T, size_t C, size_t R, class Function>
 bool binary_test(std::array<T, C * R> const& a,
@@ -204,8 +155,10 @@ TEST_CASE("Matrix Library") {
         };
 
         Mat4 m2(src);
+        Mat4 m2a(m2);
 
         REQUIRE(is_same(m2, src));
+        REQUIRE(is_same(m2, m2a));
 
         std::array<float, 9> small_src = { { 1, 2, 3, 5, 6, 7, 9, 10, 11 } };
 
