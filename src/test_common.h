@@ -9,7 +9,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 template <class T, size_t C, size_t R>
-bool is_same(dct::MatrixCore<T, C, R> const& a, std::array<T, C * R> const& b) {
+bool is_same(dct::Matrix<T, C, R> const& a, std::array<T, C * R> const& b) {
     // weirdness due to how glm specifies their templates
     // static_assert(C == M);
     for (size_t i = 0; i < C * R; ++i) {
@@ -35,7 +35,7 @@ bool is_same(dct::Vector<T, R> const& a, glm::vec<int(R), T> const& b) {
 }
 
 template <class T, size_t C, size_t R>
-bool is_same(dct::MatrixCore<T, C, R> const&    a,
+bool is_same(dct::Matrix<T, C, R> const&        a,
              glm::mat<int(C), int(R), T> const& b) {
     // weirdness due to how glm specifies their templates
     // static_assert(C == M);
@@ -50,8 +50,7 @@ bool is_same(dct::MatrixCore<T, C, R> const&    a,
 }
 
 template <class T, size_t C, size_t R>
-bool is_same(dct::MatrixCore<T, C, R> const& a,
-             dct::MatrixCore<T, C, R> const& b) {
+bool is_same(dct::Matrix<T, C, R> const& a, dct::Matrix<T, C, R> const& b) {
     return is_equal(a, b);
 }
 

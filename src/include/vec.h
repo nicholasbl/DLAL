@@ -9,6 +9,8 @@
 
 namespace dct {
 
+/// \brief The basic vector class; specializations define the 1-4 component
+/// cases.
 template <class T, size_t N>
 class Vector {};
 
@@ -27,11 +29,11 @@ public: // Basics
     constexpr T const& operator[](size_t i) const { return storage[i]; }
 
 public:
-    // default construction should zero init the vector
+    /// \brief Initialize all elements to zero
     constexpr Vector() : storage() {}
     constexpr Vector(Vector const&) = default;
 
-public:
+    /// \brief Initialize all elements to the provided value
     constexpr Vector(T _) { storage.fill(_); }
     constexpr Vector(StorageType st) : storage(st) {}
 
@@ -67,12 +69,17 @@ public: // Basics
     constexpr T const& operator[](size_t i) const { return storage[i]; }
 
 public:
-    // default construction should zero init the vector
+    /// \brief Initialize all elements to zero
     constexpr Vector() : storage() {}
     constexpr Vector(Vector const&) = default;
 
+    /// \brief Initialize all elements to the provided value
+    constexpr Vector(T _xy) : Vector(_xy, _xy) {}
+    constexpr Vector(StorageType st) : storage(st) {}
+    constexpr Vector(T _x, T _y) : storage{ _x, _y } {}
+
 public: // conversion
-    // cull
+    // downgrade
     constexpr Vector(Vector<T, 3> const& o) {
         x = o.x;
         y = o.y;
@@ -84,10 +91,6 @@ public: // conversion
     }
 
 public:
-    constexpr Vector(T _xy) : Vector(_xy, _xy) {}
-    constexpr Vector(StorageType st) : storage(st) {}
-    constexpr Vector(T _x, T _y) : storage{ _x, _y } {}
-
     constexpr Vector& operator=(Vector const& v) = default;
 
 public:
@@ -122,25 +125,27 @@ public: // Basics
     constexpr T const& operator[](size_t i) const { return storage[i]; }
 
 public:
-    // default construction should zero init the vector
+    /// \brief Initialize all elements to zero
     constexpr Vector() : storage() {}
     constexpr Vector(Vector const&) = default;
 
+    /// \brief Initialize all elements to the provided value
+    constexpr Vector(T _xyz) : Vector(_xyz, _xyz, _xyz) {}
+    constexpr Vector(StorageType st) : storage(st) {}
+    constexpr Vector(T _x, T _y, T _z) : storage{ _x, _y, _z } {}
+
 public: // conversion
+    // upgrade
     constexpr explicit Vector(Vector<T, 2> const& o, T nz)
         : Vector(o.x, o.y, nz) {}
 
     constexpr explicit Vector(T nx, Vector<T, 2> const& o)
         : Vector(nx, o.x, o.y) {}
 
-    // cull
+    // downgrade
     constexpr Vector(Vector<T, 4> const& o) : Vector(o.x, o.y, o.z) {}
 
 public:
-    constexpr Vector(T _xyz) : Vector(_xyz, _xyz, _xyz) {}
-    constexpr Vector(StorageType st) : storage(st) {}
-    constexpr Vector(T _x, T _y, T _z) : storage{ _x, _y, _z } {}
-
     constexpr Vector& operator=(Vector const& v) = default;
 
 public:
@@ -175,11 +180,18 @@ public: // Basics
     constexpr T const& operator[](size_t i) const { return storage[i]; }
 
 public:
-    // default construction should zero init the vector
+    /// \brief Initialize all elements to zero
     constexpr Vector() : storage() {}
     constexpr Vector(Vector const&) = default;
 
+    /// \brief Initialize all elements to the provided value
+    constexpr Vector(T _xyzw) : Vector(_xyzw, _xyzw, _xyzw, _xyzw) {}
+    constexpr Vector(StorageType st) : storage(st) {}
+    constexpr Vector(T _x, T _y, T _z, T _w) : storage{ _x, _y, _z, _w } {}
+
 public: // conversion
+    // upgrade
+
     // with a 2d
     constexpr explicit Vector(Vector<T, 2> const& o, T nz, T nw)
         : Vector(o.x, o.y, nz, nw) {}
@@ -198,10 +210,6 @@ public: // conversion
         : Vector(nx, o.x, o.y, o.z) {}
 
 public:
-    constexpr Vector(T _xyzw) : Vector(_xyzw, _xyzw, _xyzw, _xyzw) {}
-    constexpr Vector(StorageType st) : storage(st) {}
-    constexpr Vector(T _x, T _y, T _z, T _w) : storage{ _x, _y, _z, _w } {}
-
     constexpr Vector& operator=(Vector const& v) = default;
 
 public:
@@ -237,11 +245,19 @@ public: // Basics
     constexpr float const& operator[](size_t i) const { return storage[i]; }
 
 public:
-    // default construction should zero init the vector
+    /// \brief Initialize all elements to zero
     constexpr Vector() : storage() {}
     constexpr Vector(Vector const&) = default;
 
+    /// \brief Initialize all elements to the provided value
+    constexpr Vector(float _xyzw) : Vector(_xyzw, _xyzw, _xyzw, _xyzw) {}
+    constexpr Vector(vector_detail::vec4 const& st) : as_simd(st) {}
+    constexpr Vector(StorageType st) : storage(st) {}
+    constexpr Vector(float _x, float _y, float _z, float _w)
+        : as_simd{ _x, _y, _z, _w } {}
+
 public: // conversion
+    // upgrade
     // with a 2d
     constexpr explicit Vector(Vector<float, 2> const& o, float nz, float nw)
         : Vector(o.x, o.y, nz, nw) {}
@@ -260,12 +276,6 @@ public: // conversion
         : Vector(nx, o.x, o.y, o.z) {}
 
 public:
-    constexpr Vector(float _xyzw) : Vector(_xyzw, _xyzw, _xyzw, _xyzw) {}
-    constexpr Vector(vector_detail::vec4 const& st) : as_simd(st) {}
-    constexpr Vector(StorageType st) : storage(st) {}
-    constexpr Vector(float _x, float _y, float _z, float _w)
-        : as_simd{ _x, _y, _z, _w } {}
-
     constexpr Vector& operator=(Vector const& v) = default;
 
 public:
@@ -277,11 +287,6 @@ public:
     constexpr auto end() { return storage.end(); }
     constexpr auto end() const { return storage.end(); }
 };
-
-template <class T>
-constexpr bool _is_fvec4() {
-    return std::is_same_v<T, Vector<float, 4>>;
-}
 
 // Vector Typedefs =============================================================
 
@@ -618,7 +623,7 @@ T length(Vector<T, N> const& a) {
 }
 
 template <class T, size_t N>
-T length2(Vector<T, N> const& a) {
+T length_squared(Vector<T, N> const& a) {
     return dot(a, a);
 }
 
@@ -628,8 +633,8 @@ T distance(Vector<T, N> const& a, Vector<T, N> const& b) {
 }
 
 template <class T, size_t N>
-T distance2(Vector<T, N> const& a, Vector<T, N> const& b) {
-    return length2(b - a);
+T distance_squared(Vector<T, N> const& a, Vector<T, N> const& b) {
+    return length_squared(b - a);
 }
 
 template <class T, size_t N>
@@ -674,6 +679,16 @@ bool is_any(Vector<bool, N> const& a) {
 template <class T, size_t N>
 bool is_equal(Vector<T, N> const& a, Vector<T, N> const& b) {
     return is_all(a == b);
+}
+
+template <class T, size_t N>
+bool is_equal(Vector<T, N> const& a, Vector<T, N> const& b, T limit) {
+    static_assert(std::is_floating_point_v<T>);
+
+    auto         delta = abs(a - b);
+    Vector<T, N> c(limit);
+
+    return is_all(delta < c);
 }
 
 // Other =======================================================================

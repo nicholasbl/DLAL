@@ -276,7 +276,7 @@ TEST_CASE("Vector Library") {
         auto lb = glm::length(glm::vec4(1.0f, 2.0f, 3.0f, 4.0f));
         REQUIRE(la == lb);
 
-        auto sla = length2(Vec4(1.0f, 2.0f, 3.0f, 4.0f));
+        auto sla = length_squared(Vec4(1.0f, 2.0f, 3.0f, 4.0f));
         auto slb = glm::length2(glm::vec4(1.0f, 2.0f, 3.0f, 4.0f));
         REQUIRE(sla == slb);
 
@@ -288,8 +288,8 @@ TEST_CASE("Vector Library") {
 
         REQUIRE(da == db);
 
-        auto da2 = distance2(Vec4(1.0f, 2.0f, 3.0f, 4.0f),
-                             Vec4(3.0f, 2.0f, 1.0f, 8.0f));
+        auto da2 = distance_squared(Vec4(1.0f, 2.0f, 3.0f, 4.0f),
+                                    Vec4(3.0f, 2.0f, 1.0f, 8.0f));
         auto db2 = glm::distance2(glm::vec4(1.0f, 2.0f, 3.0f, 4.0f),
                                   glm::vec4(3.0f, 2.0f, 1.0f, 8.0f));
 

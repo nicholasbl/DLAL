@@ -6,8 +6,8 @@
 namespace dct {
 
 template <class T, size_t C, size_t R>
-MatrixCore<T, R, C> transpose(MatrixCore<T, C, R> const& m) {
-    MatrixCore<T, R, C> ret;
+Matrix<T, R, C> transpose(Matrix<T, C, R> const& m) {
+    Matrix<T, R, C> ret;
     for (size_t c = 0; c < C; c++) {
         for (size_t r = 0; r < R; r++) {
             ret[r][c] = m[c][r];
@@ -17,8 +17,8 @@ MatrixCore<T, R, C> transpose(MatrixCore<T, C, R> const& m) {
 }
 
 template <class T>
-MatrixCore<T, 2, 2> transpose(MatrixCore<T, 2, 2> const& m) {
-    MatrixCore<T, 2, 2> ret;
+Matrix<T, 2, 2> transpose(Matrix<T, 2, 2> const& m) {
+    Matrix<T, 2, 2> ret;
     ret[0][0] = m[0][0];
     ret[0][1] = m[1][0];
     ret[1][0] = m[0][1];
@@ -27,8 +27,8 @@ MatrixCore<T, 2, 2> transpose(MatrixCore<T, 2, 2> const& m) {
 }
 
 template <class T>
-MatrixCore<T, 3, 3> transpose(MatrixCore<T, 3, 3> const& m) {
-    MatrixCore<T, 3, 3> ret;
+Matrix<T, 3, 3> transpose(Matrix<T, 3, 3> const& m) {
+    Matrix<T, 3, 3> ret;
     ret[0][0] = m[0][0];
     ret[0][1] = m[1][0];
     ret[0][2] = m[2][0];
@@ -44,8 +44,8 @@ MatrixCore<T, 3, 3> transpose(MatrixCore<T, 3, 3> const& m) {
 }
 
 template <class T>
-MatrixCore<T, 4, 4> transpose(MatrixCore<T, 4, 4> const& m) {
-    MatrixCore<T, 4, 4> ret;
+Matrix<T, 4, 4> transpose(Matrix<T, 4, 4> const& m) {
+    Matrix<T, 4, 4> ret;
     ret[0][0] = m[0][0];
     ret[0][1] = m[1][0];
     ret[0][2] = m[2][0];
@@ -69,12 +69,12 @@ MatrixCore<T, 4, 4> transpose(MatrixCore<T, 4, 4> const& m) {
 }
 
 template <class T>
-inline T determinant(MatrixCore<T, 2, 2> const& m) {
+inline T determinant(Matrix<T, 2, 2> const& m) {
     return m[0][0] * m[1][1] - m[1][0] * m[0][1];
 }
 
 template <class T>
-inline T determinant(MatrixCore<T, 3, 3> const& m) {
+inline T determinant(Matrix<T, 3, 3> const& m) {
 
     T const a = m[0][0];
     T const b = m[1][0];
@@ -92,7 +92,7 @@ inline T determinant(MatrixCore<T, 3, 3> const& m) {
 }
 
 template <class T>
-inline T determinant(MatrixCore<T, 4, 4> const& m) {
+inline T determinant(Matrix<T, 4, 4> const& m) {
     T const a = m[2][2] * m[3][3] - m[3][2] * m[2][3];
     T const b = m[2][1] * m[3][3] - m[3][1] * m[2][3];
     T const c = m[2][1] * m[3][2] - m[3][1] * m[2][2];
@@ -110,20 +110,20 @@ inline T determinant(MatrixCore<T, 4, 4> const& m) {
 
 
 template <class T>
-auto inverse(MatrixCore<T, 2, 2> const& m) {
+auto inverse(Matrix<T, 2, 2> const& m) {
     T const one_over_det = static_cast<T>(1) / determinant(m);
 
-    return MatrixCore<T, 2, 2>(m[1][1] * one_over_det,
-                               -m[0][1] * one_over_det,
-                               -m[1][0] * one_over_det,
-                               m[0][0] * one_over_det);
+    return Matrix<T, 2, 2>(m[1][1] * one_over_det,
+                           -m[0][1] * one_over_det,
+                           -m[1][0] * one_over_det,
+                           m[0][0] * one_over_det);
 }
 
 template <class T>
-auto inverse(MatrixCore<T, 3, 3> const& m) {
+auto inverse(Matrix<T, 3, 3> const& m) {
     T const one_over_det = static_cast<T>(1) / determinant(m);
 
-    MatrixCore<T, 3, 3> ret;
+    Matrix<T, 3, 3> ret;
     ret[0][0] = +(m[1][1] * m[2][2] - m[2][1] * m[1][2]) * one_over_det;
     ret[1][0] = -(m[1][0] * m[2][2] - m[2][0] * m[1][2]) * one_over_det;
     ret[2][0] = +(m[1][0] * m[2][1] - m[2][0] * m[1][1]) * one_over_det;

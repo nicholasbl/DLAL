@@ -9,7 +9,7 @@
 namespace dct {
 
 template <class T>
-struct QuaternionCore {
+struct Quaternion {
     union {
         Vector<T, 4> storage;
         struct {
@@ -21,45 +21,42 @@ struct QuaternionCore {
     };
 
 public:
-    QuaternionCore() : storage(0, 0, 0, 1) {}
-    QuaternionCore(T w, Vector<T, 3> const& v) : storage(v, w) {}
-    explicit QuaternionCore(Vector<T, 4> const& f) : storage(f) {}
+    Quaternion() : storage(0, 0, 0, 1) {}
+    Quaternion(T w, Vector<T, 3> const& v) : storage(v, w) {}
+    explicit Quaternion(Vector<T, 4> const& f) : storage(f) {}
 
 
 public:
     explicit operator Vector<T, 4>() const { return storage; }
 };
 
-using Quat  = QuaternionCore<float>;
-using DQuat = QuaternionCore<double>;
+using Quat  = Quaternion<float>;
+using DQuat = Quaternion<double>;
 
 
 // Operators ===================================================================
 
 template <class T>
-QuaternionCore<T> operator+(QuaternionCore<T> const& q,
-                            QuaternionCore<T> const& r) {
-    return QuaternionCore<T>(q.storage + r.storage);
+Quaternion<T> operator+(Quaternion<T> const& q, Quaternion<T> const& r) {
+    return Quaternion<T>(q.storage + r.storage);
 }
 
 template <class T>
-QuaternionCore<T> operator-(QuaternionCore<T> const& q,
-                            QuaternionCore<T> const& r) {
-    return QuaternionCore<T>(q.storage - r.storage);
+Quaternion<T> operator-(Quaternion<T> const& q, Quaternion<T> const& r) {
+    return Quaternion<T>(q.storage - r.storage);
 }
 
 template <class T>
-QuaternionCore<T> operator*(QuaternionCore<T> const& q, T scalar) {
-    return QuaternionCore<T>(q.storage * scalar);
+Quaternion<T> operator*(Quaternion<T> const& q, T scalar) {
+    return Quaternion<T>(q.storage * scalar);
 }
 
 // note that rotating a non-unit quaternion can do odd things
 
 template <class T>
-QuaternionCore<T> operator*(QuaternionCore<T> const& q,
-                            QuaternionCore<T> const& r) {
+Quaternion<T> operator*(Quaternion<T> const& q, Quaternion<T> const& r) {
 
-    QuaternionCore<T> ret;
+    Quaternion<T> ret;
 
     ret.x = q.w * r.x + q.x * r.w + q.y * r.z - q.z * r.y;
     ret.y = q.w * r.y + q.y * r.w + q.z * r.x - q.x * r.z;
@@ -70,7 +67,7 @@ QuaternionCore<T> operator*(QuaternionCore<T> const& q,
 }
 
 template <class T>
-Vector<T, 3> operator*(QuaternionCore<T> const& q, Vector<T, 3> const& v) {
+Vector<T, 3> operator*(Quaternion<T> const& q, Vector<T, 3> const& v) {
     Vector<T, 3> const lqv(q.x, q.y, q.z);
     Vector<T, 3> const uv(cross(lqv, v));
     Vector<T, 3> const uuv(cross(lqv, uv));
@@ -81,22 +78,22 @@ Vector<T, 3> operator*(QuaternionCore<T> const& q, Vector<T, 3> const& v) {
 
 // Operations ==================================================================
 template <class T>
-T length(QuaternionCore<T> const& q) {
+T length(Quaternion<T> const& q) {
     return length(Vector<T, 4>(q));
 }
 
 template <class T>
-QuaternionCore<T> normalize(QuaternionCore<T> const& q) {
-    return QuaternionCore<T>(normalize(q.storage));
+Quaternion<T> normalize(Quaternion<T> const& q) {
+    return Quaternion<T>(normalize(q.storage));
 }
 
 template <class T>
-QuaternionCore<T> conjugate(QuaternionCore<T> const& q) {
-    return QuaternionCore<T>(q.w, -Vector<T, 3>(q.storage));
+Quaternion<T> conjugate(Quaternion<T> const& q) {
+    return Quaternion<T>(q.w, -Vector<T, 3>(q.storage));
 }
 
 template <class T>
-QuaternionCore<T> inverse(QuaternionCore<T> const& q) {
+Quaternion<T> inverse(Quaternion<T> const& q) {
     return conjugate(q) / dot(q.storage, q.storage);
 }
 
@@ -105,7 +102,7 @@ QuaternionCore<T> inverse(QuaternionCore<T> const& q) {
 
 /// \brief Convert a UNIT quaternion to a mat3
 template <class T>
-MatrixCore<T, 3, 3> mat3_from_unit_quaternion(QuaternionCore<T> const& q) {
+Matrix<T, 3, 3> mat3_from_unit_quaternion(Quaternion<T> const& q) {
     T const qxx(q.x * q.x);
     T const qyy(q.y * q.y);
     T const qzz(q.z * q.z);
@@ -119,7 +116,7 @@ MatrixCore<T, 3, 3> mat3_from_unit_quaternion(QuaternionCore<T> const& q) {
     T const one(1);
     T const two(2);
 
-    MatrixCore<T, 3, 3> ret;
+    Matrix<T, 3, 3> ret;
     ret[0][0] = one - two * (qyy + qzz);
     ret[0][1] = two * (qxy + qwz);
     ret[0][2] = two * (qxz - qwy);
@@ -135,8 +132,9 @@ MatrixCore<T, 3, 3> mat3_from_unit_quaternion(QuaternionCore<T> const& q) {
     return ret;
 }
 
+/// \brief Convert a UNIT quaternion to a mat3
 template <class T>
-MatrixCore<T, 4, 4> mat4_from_unit_quaternion(QuaternionCore<T> const& q) {
+Matrix<T, 4, 4> mat4_from_unit_quaternion(Quaternion<T> const& q) {
 
     T const qxx(q.x * q.x);
     T const qyy(q.y * q.y);
@@ -151,7 +149,7 @@ MatrixCore<T, 4, 4> mat4_from_unit_quaternion(QuaternionCore<T> const& q) {
     T const one(1);
     T const two(2);
 
-    MatrixCore<T, 4, 4> ret(0);
+    Matrix<T, 4, 4> ret(0);
     ret[0][0] = one - two * (qyy + qzz);
     ret[0][1] = two * (qxy + qwz);
     ret[0][2] = two * (qxz - qwy);
@@ -169,8 +167,8 @@ MatrixCore<T, 4, 4> mat4_from_unit_quaternion(QuaternionCore<T> const& q) {
 }
 
 template <class T>
-QuaternionCore<T> quaternion_from_matrix(MatrixCore<T, 3, 3> const& m) {
-    QuaternionCore<T> q;
+Quaternion<T> quaternion_from_matrix(Matrix<T, 3, 3> const& m) {
+    Quaternion<T> q;
 
     float const trace = m[0][0] + m[1][1] + m[2][2];
     // printf("TRACE %f : %f %f %f\n", trace, m[0][0], m[1][1], m[2][2]);
@@ -211,8 +209,8 @@ QuaternionCore<T> quaternion_from_matrix(MatrixCore<T, 3, 3> const& m) {
 }
 
 template <class T>
-QuaternionCore<T> quaternion_from_matrix(MatrixCore<T, 4, 4> const& m) {
-    return quaternion_from_matrix(MatrixCore<T, 3, 3>(m));
+Quaternion<T> quaternion_from_matrix(Matrix<T, 4, 4> const& m) {
+    return quaternion_from_matrix(Matrix<T, 3, 3>(m));
 }
 
 // Other =======================================================================
@@ -223,14 +221,14 @@ QuaternionCore<T> quaternion_from_matrix(MatrixCore<T, 4, 4> const& m) {
 /// \param to A normalized destination vector
 ///
 template <class T>
-QuaternionCore<T> rotation_from_to(Vector<T, 3> const& from,
-                                   Vector<T, 3> const& to) {
+Quaternion<T> rotation_from_to(Vector<T, 3> const& from,
+                               Vector<T, 3> const& to) {
     Vector<T, 3> const w = cross(from, to);
 
     Vector<T, 4> lq(w.x, w.y, w.z, dot(from, to));
 
     lq.w += dot(lq, lq);
-    return normalize(QuaternionCore<T>(lq));
+    return normalize(Quaternion<T>(lq));
 }
 
 
@@ -240,29 +238,29 @@ QuaternionCore<T> rotation_from_to(Vector<T, 3> const& from,
 /// \param norm_up The 'up' direction, must be normalized
 ///
 template <class T>
-QuaternionCore<T> look_at(Vector<T, 3> const& norm_direction,
-                          Vector<T, 3> const& norm_up) {
+Quaternion<T> look_at_lh(Vector<T, 3> const& norm_direction,
+                         Vector<T, 3> const& norm_up) {
     if (std::abs(dot(norm_direction, norm_up)) >= 1) {
         return rotation_from_to({ 0, 0, -1 }, norm_direction);
     }
 
-    MatrixCore<T, 3, 3> ret;
+    Matrix<T, 3, 3> ret;
     ret[0] = normalize(cross(norm_up, norm_direction));
     ret[1] = cross(norm_direction, ret[0]);
     ret[2] = norm_direction;
 
-    return QuaternionCore<T>(quaternion_from_matrix(ret));
+    return Quaternion<T>(quaternion_from_matrix(ret));
 }
 
 ///
 /// \brief Compute a quaternion from Euler angles, expressed in radians
 ///
 template <class T>
-QuaternionCore<T> from_angles(Vector<T, 3> angles) {
+Quaternion<T> from_angles(Vector<T, 3> angles) {
     Vector<T, 3> const c = cos(angles * T(0.5));
     Vector<T, 3> const s = sin(angles * T(0.5));
 
-    QuaternionCore<T> ret;
+    Quaternion<T> ret;
     ret.x = s.x * c.y * c.z - c.x * s.y * s.z;
     ret.y = c.x * s.y * c.z + s.x * c.y * s.z;
     ret.z = c.x * c.y * s.z - s.x * s.y * c.z;
@@ -275,10 +273,10 @@ QuaternionCore<T> from_angles(Vector<T, 3> angles) {
 /// radians
 ///
 template <class T>
-QuaternionCore<T> from_angle_axis(T angle, Vector<T, 3> axis) {
+Quaternion<T> from_angle_axis(T angle, Vector<T, 3> axis) {
     T const s = std::sin(angle * static_cast<T>(0.5));
 
-    return QuaternionCore<T>(std::cos(angle * static_cast<T>(0.5)), axis * s);
+    return Quaternion<T>(std::cos(angle * static_cast<T>(0.5)), axis * s);
 }
 
 

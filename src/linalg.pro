@@ -19,6 +19,7 @@ SOURCES += \
     matrix_operations.cpp \
     matrix_transform.cpp \
     quat.cpp \
+    tmatrix.cpp \
     vector.cpp
 
 HEADERS += \
@@ -26,7 +27,7 @@ HEADERS += \
     include/mat.h \
     include/mat_detail.h \
     include/mat_operations.h \
-    include/mat_transform.h \
+    include/mat_transforms.h \
     include/quat.h \
     include/tmatrix.h \
     include/vec.h \

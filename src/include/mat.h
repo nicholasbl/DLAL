@@ -8,6 +8,10 @@
 
 namespace dct {
 
+///
+/// \brief The MatrixStorage class defines the column-major storage of the
+/// matrix
+///
 template <class T, size_t C, size_t R>
 struct MatrixStorage {
     using ColumnType = Vector<T, R>;
@@ -19,9 +23,13 @@ struct MatrixStorage {
 
     static_assert(sizeof(StorageType) == sizeof(T) * C * R);
 
-    MatrixStorage() : storage() {}
+    constexpr MatrixStorage() : storage() {}
 };
 
+///
+/// \brief This specialization attemps to force alignment to aid vector
+/// instructions
+///
 template <>
 struct alignas(16) MatrixStorage<float, 4, 4> {
     using ColumnType = Vector<float, 4>;
@@ -41,8 +49,15 @@ struct alignas(16) MatrixStorage<float, 4, 4> {
     MatrixStorage() : storage() {}
 };
 
+///
+/// \brief The root Matrix template
+///
+/// \tparam T The cell value type of the matrix
+/// \tparam C The number of columns
+/// \tparam R The number of rows
+///
 template <class T, size_t C, size_t R>
-struct MatrixCore : public MatrixStorage<T, C, R> {
+struct Matrix : public MatrixStorage<T, C, R> {
 
     using Parent = MatrixStorage<T, C, R>;
 
@@ -63,44 +78,75 @@ public: // Basics
     }
 
 public:
-    constexpr MatrixCore() : Parent({}) {}
-    constexpr MatrixCore(MatrixCore const&) = default;
+    /// \brief Initialize all cells to zero
+    constexpr Matrix() : Parent({}) {}
 
-    constexpr MatrixCore(std::array<float, C * R> const& a) {
+    constexpr Matrix(Matrix const&) = default;
+
+    constexpr Matrix(std::array<float, C * R> const& a) {
         std::copy(a.data(), a.data() + a.size(), data());
     }
 
-    // Fills all cells with the same value
-    constexpr MatrixCore(T value) { Parent::storage.fill(value); }
+    /// \brief Initialize all cells to the given value
+    constexpr Matrix(T value) { Parent::storage.fill(value); }
 
-    constexpr MatrixCore(StorageType pack) : Parent::storage(pack) {}
+    constexpr Matrix(StorageType pack) : Parent::storage(pack) {}
 
+    /// \brief Initialize values from a differently sized matrix, zeros
+    /// otherwise.
     template <size_t C2, size_t R2>
-    constexpr explicit MatrixCore(MatrixCore<T, C2, R2> const& other) {
-        static_assert(R2 >= R and C2 >= C, "Cannot assign smaller to larger!");
+    constexpr explicit Matrix(Matrix<T, C2, R2> const& other) {
+        using namespace matrix_detail;
         constexpr size_t bound = C2 < C ? C2 : C;
         // no loops for speed in debug mode
+
         if constexpr (bound == 1) {
-            Parent::storage[0] = other.storage[0];
+            Parent::storage[0] = upgrade<R>(other.storage[0]);
         } else if constexpr (bound == 2) {
-            Parent::storage[0] = other.storage[0];
-            Parent::storage[1] = other.storage[1];
+            Parent::storage[0] = upgrade<R>(other.storage[0]);
+            Parent::storage[1] = upgrade<R>(other.storage[1]);
         } else if constexpr (bound == 3) {
-            Parent::storage[0] = other.storage[0];
-            Parent::storage[1] = other.storage[1];
-            Parent::storage[2] = other.storage[2];
+            Parent::storage[0] = upgrade<R>(other.storage[0]);
+            Parent::storage[1] = upgrade<R>(other.storage[1]);
+            Parent::storage[2] = upgrade<R>(other.storage[2]);
         } else if constexpr (bound == 4) {
-            Parent::storage[0] = other.storage[0];
-            Parent::storage[1] = other.storage[1];
-            Parent::storage[2] = other.storage[2];
-            Parent::storage[3] = other.storage[3];
+            Parent::storage[0] = upgrade<R>(other.storage[0]);
+            Parent::storage[1] = upgrade<R>(other.storage[1]);
+            Parent::storage[2] = upgrade<R>(other.storage[2]);
+            Parent::storage[3] = upgrade<R>(other.storage[3]);
         }
     }
 
 public:
-    static MatrixCore const& identity() {
-        static constexpr MatrixCore ret = []() {
-            MatrixCore l;
+    /// \brief Copy values from a differently sized matrix.
+    template <size_t C2, size_t R2>
+    void assign(Matrix<T, C2, R2> const& other) {
+        using namespace matrix_detail;
+        constexpr size_t bound = C2 < C ? C2 : C;
+        // no loops for speed in debug mode
+
+        if constexpr (bound == 1) {
+            Parent::storage[0] = upgrade<R>(other.storage[0]);
+        } else if constexpr (bound == 2) {
+            Parent::storage[0] = upgrade<R>(other.storage[0]);
+            Parent::storage[1] = upgrade<R>(other.storage[1]);
+        } else if constexpr (bound == 3) {
+            Parent::storage[0] = upgrade<R>(other.storage[0]);
+            Parent::storage[1] = upgrade<R>(other.storage[1]);
+            Parent::storage[2] = upgrade<R>(other.storage[2]);
+        } else if constexpr (bound == 4) {
+            Parent::storage[0] = upgrade<R>(other.storage[0]);
+            Parent::storage[1] = upgrade<R>(other.storage[1]);
+            Parent::storage[2] = upgrade<R>(other.storage[2]);
+            Parent::storage[3] = upgrade<R>(other.storage[3]);
+        }
+    }
+
+public:
+    /// \brief Obtain an identity matrix
+    static Matrix const& identity() {
+        static const Matrix ret = []() {
+            Matrix l;
 
             for (size_t c = 0; c < C; c++) {
                 for (size_t r = 0; r < R; r++) {
@@ -127,27 +173,18 @@ public:
 
 // Typedefs ====================================================================
 
-using Mat2 = MatrixCore<float, 3, 3>;
-using Mat3 = MatrixCore<float, 3, 3>;
-using Mat4 = MatrixCore<float, 4, 4>;
-
-// Common ======================================================================
-
-inline void set_mat_to_identity(Mat4& mat) {
-    mat[0] = { 1, 0, 0, 0 };
-    mat[1] = { 0, 1, 0, 0 };
-    mat[2] = { 0, 0, 1, 0 };
-    mat[3] = { 0, 0, 0, 1 };
-}
+using Mat2 = Matrix<float, 2, 2>;
+using Mat3 = Matrix<float, 3, 3>;
+using Mat4 = Matrix<float, 4, 4>;
 
 // Unary =======================================================================
 template <class T, size_t C, size_t R>
-MatrixCore<T, C, R> operator-(MatrixCore<T, C, R> const& m) {
+Matrix<T, C, R> operator-(Matrix<T, C, R> const& m) {
     MATRIX_UNARY(-)
 }
 
 template <class T, size_t C, size_t R>
-MatrixCore<T, C, R> operator!(MatrixCore<T, C, R> const& m) {
+Matrix<T, C, R> operator!(Matrix<T, C, R> const& m) {
     MATRIX_UNARY(!)
 }
 
@@ -155,61 +192,58 @@ MatrixCore<T, C, R> operator!(MatrixCore<T, C, R> const& m) {
 
 // Addition ====================================================================
 template <class T, size_t C, size_t R>
-auto operator+(MatrixCore<T, C, R> const& m, MatrixCore<T, C, R> const& o) {
+auto operator+(Matrix<T, C, R> const& m, Matrix<T, C, R> const& o) {
     MATRIX_BINARY(+)
 }
 template <class T, size_t C, size_t R>
-auto operator+(MatrixCore<T, C, R> const& m, T scalar) {
+auto operator+(Matrix<T, C, R> const& m, T scalar) {
     MATRIX_BINARY_SCALAR_R(+)
 }
 template <class T, size_t C, size_t R>
-auto operator+(T scalar, MatrixCore<T, C, R> const& m) {
+auto operator+(T scalar, Matrix<T, C, R> const& m) {
     MATRIX_BINARY_SCALAR_L(+)
 }
 
 template <class T, size_t C, size_t R>
-MatrixCore<T, C, R>& operator+=(MatrixCore<T, C, R>&       m,
-                                MatrixCore<T, C, R> const& o) {
+Matrix<T, C, R>& operator+=(Matrix<T, C, R>& m, Matrix<T, C, R> const& o) {
     MATRIX_IN_PLACE(+=)
 }
 template <class T, size_t C, size_t R>
-MatrixCore<T, C, R>& operator+=(MatrixCore<T, C, R>& m, T scalar) {
+Matrix<T, C, R>& operator+=(Matrix<T, C, R>& m, T scalar) {
     MATRIX_IN_PLACE_SCALAR_R(+=)
 }
-
 
 // Subtraction =================================================================
 
 template <class T, size_t C, size_t R>
-auto operator-(MatrixCore<T, C, R> const& m, MatrixCore<T, C, R> const& o) {
+auto operator-(Matrix<T, C, R> const& m, Matrix<T, C, R> const& o) {
     MATRIX_BINARY(-)
 }
 template <class T, size_t C, size_t R>
-auto operator-(MatrixCore<T, C, R> const& m, T scalar) {
+auto operator-(Matrix<T, C, R> const& m, T scalar) {
     MATRIX_BINARY_SCALAR_R(-)
 }
 template <class T, size_t C, size_t R>
-auto operator-(T scalar, MatrixCore<T, C, R> const& m) {
+auto operator-(T scalar, Matrix<T, C, R> const& m) {
     MATRIX_BINARY_SCALAR_L(-)
 }
 
 template <class T, size_t C, size_t R>
-MatrixCore<T, C, R>& operator-=(MatrixCore<T, C, R>&       m,
-                                MatrixCore<T, C, R> const& o) {
+Matrix<T, C, R>& operator-=(Matrix<T, C, R>& m, Matrix<T, C, R> const& o) {
     MATRIX_IN_PLACE(-=)
 }
 template <class T, size_t C, size_t R>
-MatrixCore<T, C, R>& operator-=(MatrixCore<T, C, R>& m, T scalar) {
+Matrix<T, C, R>& operator-=(Matrix<T, C, R>& m, T scalar) {
     MATRIX_IN_PLACE_SCALAR_R(-=)
 }
 
 // Multiply ====================================================================
 
 template <class T, size_t N, size_t R, size_t C>
-auto operator*(MatrixCore<T, N, R> const& m, MatrixCore<T, C, N> const& o) {
-    static_assert(std::is_same_v<typename MatrixCore<T, N, R>::RowType,
-                                 typename MatrixCore<T, C, N>::ColumnType>);
-    MatrixCore<T, C, R> ret(0);
+auto operator*(Matrix<T, N, R> const& m, Matrix<T, C, N> const& o) {
+    static_assert(std::is_same_v<typename Matrix<T, N, R>::RowType,
+                                 typename Matrix<T, C, N>::ColumnType>);
+    Matrix<T, C, R> ret(0);
 
     for (size_t i = 0; i < C; ++i) {
         for (size_t j = 0; j < R; ++j) {
@@ -223,7 +257,7 @@ auto operator*(MatrixCore<T, N, R> const& m, MatrixCore<T, C, N> const& o) {
 }
 
 template <class T, size_t C, size_t R>
-auto operator*(MatrixCore<T, C, R> const& m, Vector<T, R> const& o) {
+auto operator*(Matrix<T, C, R> const& m, Vector<T, R> const& o) {
     Vector<T, R> ret(0);
 
     for (size_t i = 0; i < C; ++i) {
@@ -271,7 +305,7 @@ inline auto operator*(Mat4 const& m, Mat4 const& o) {
 }
 
 template <class T>
-auto operator*(MatrixCore<T, 3, 3> const& m, Vector<T, 3> const& o) {
+auto operator*(Matrix<T, 3, 3> const& m, Vector<T, 3> const& o) {
     Vector<T, 3> a0 = m[0] * Vector<T, 3>(o[0]);
     Vector<T, 3> a1 = m[1] * Vector<T, 3>(o[1]);
 
@@ -283,7 +317,7 @@ auto operator*(MatrixCore<T, 3, 3> const& m, Vector<T, 3> const& o) {
 }
 
 template <class T>
-auto operator*(MatrixCore<T, 4, 4> const& m, Vector<T, 4> const& o) {
+auto operator*(Matrix<T, 4, 4> const& m, Vector<T, 4> const& o) {
     Vector<T, 4> a0 = m[0] * Vector<T, 4>(o[0]);
     Vector<T, 4> a1 = m[1] * Vector<T, 4>(o[1]);
 
@@ -299,63 +333,60 @@ auto operator*(MatrixCore<T, 4, 4> const& m, Vector<T, 4> const& o) {
 
 
 template <class T, size_t C, size_t R>
-auto operator*(MatrixCore<T, C, R> const& m, T scalar) {
+auto operator*(Matrix<T, C, R> const& m, T scalar) {
     MATRIX_BINARY_SCALAR_R(*)
 }
 
 template <class T, size_t C, size_t R>
-auto operator*(T scalar, MatrixCore<T, C, R> const& m) {
+auto operator*(T scalar, Matrix<T, C, R> const& m) {
     MATRIX_BINARY_SCALAR_L(*)
 }
 
 
 template <class T, size_t N, size_t R, size_t C>
-MatrixCore<T, N, R> operator*=(MatrixCore<T, N, R>&       m,
-                               MatrixCore<T, C, N> const& o) {
+Matrix<T, N, R> operator*=(Matrix<T, N, R>& m, Matrix<T, C, N> const& o) {
     return m = m * o;
 }
 template <class T, size_t C, size_t R>
-MatrixCore<T, C, R>& operator*=(MatrixCore<T, C, R>& m, T scalar) {
+Matrix<T, C, R>& operator*=(Matrix<T, C, R>& m, T scalar) {
     return m = m * scalar;
 }
 template <class T, size_t C, size_t R>
-MatrixCore<T, C, R>& operator*=(T scalar, MatrixCore<T, C, R>& m) {
+Matrix<T, C, R>& operator*=(T scalar, Matrix<T, C, R>& m) {
     return m = scalar * m;
 }
 
 // Division ====================================================================
 
 template <class T, size_t C, size_t R>
-auto operator/(MatrixCore<T, C, R> const& m, T scalar) {
+auto operator/(Matrix<T, C, R> const& m, T scalar) {
     MATRIX_BINARY_SCALAR_R(/)
 }
 
 template <class T, size_t C, size_t R>
-auto operator/(T scalar, MatrixCore<T, C, R> const& m) {
+auto operator/(T scalar, Matrix<T, C, R> const& m) {
     MATRIX_BINARY_SCALAR_L(/)
 }
 
 // Boolean =====================================================================
 
 template <class T, size_t C, size_t R>
-auto operator==(MatrixCore<T, C, R> const& m, MatrixCore<T, C, R> const& o) {
+auto operator==(Matrix<T, C, R> const& m, Matrix<T, C, R> const& o) {
     MATRIX_BINARY_BOOL(==)
 }
 
 template <class T, size_t C, size_t R>
-auto operator!=(MatrixCore<T, C, R> const& m, MatrixCore<T, C, R> const& o) {
+auto operator!=(Matrix<T, C, R> const& m, Matrix<T, C, R> const& o) {
     MATRIX_BINARY_BOOL(!=)
 }
 
 template <class T, size_t C, size_t R>
-auto operator&&(MatrixCore<bool, C, R> const& m,
-                MatrixCore<bool, C, R> const& o) {
+auto operator&&(Matrix<bool, C, R> const& m, Matrix<bool, C, R> const& o) {
     MATRIX_BINARY_BOOL(&&)
 }
 
 template <class T, size_t C, size_t R>
-auto operator||(MatrixCore<bool, C, R> const& m,
-                MatrixCore<bool, C, R> const& o) {
+auto operator||(Matrix<bool, C, R> const& m, Matrix<bool, C, R> const& o) {
     MATRIX_BINARY_BOOL(||)
 }
 
@@ -370,7 +401,7 @@ auto operator||(MatrixCore<bool, C, R> const& m,
 
 // Other =======================================================================
 template <size_t C, size_t R>
-bool is_all(MatrixCore<bool, C, R> const& a) {
+bool is_all(Matrix<bool, C, R> const& a) {
     if constexpr (C == 1) {
         return is_all(a[0]);
     } else if constexpr (C == 2) {
@@ -383,7 +414,7 @@ bool is_all(MatrixCore<bool, C, R> const& a) {
 }
 
 template <size_t C, size_t R>
-bool is_any(MatrixCore<bool, C, R> const& a) {
+bool is_any(Matrix<bool, C, R> const& a) {
     if constexpr (C == 1) {
         return is_any(a[0]);
     } else if constexpr (C == 2) {
@@ -396,8 +427,18 @@ bool is_any(MatrixCore<bool, C, R> const& a) {
 }
 
 template <class T, size_t C, size_t R>
-bool is_equal(MatrixCore<T, C, R> const& a, MatrixCore<T, C, R> const& b) {
+bool is_equal(Matrix<T, C, R> const& a, Matrix<T, C, R> const& b) {
     return is_all(a == b);
+}
+
+template <class T, size_t C, size_t R>
+bool is_equal(Matrix<T, C, R> const& a, Matrix<T, C, R> const& b, T limit) {
+    static_assert(std::is_floating_point_v<T>);
+
+    auto            delta = abs(a - b);
+    Matrix<T, C, R> c(limit);
+
+    return is_all(delta < c);
 }
 
 } // namespace dct

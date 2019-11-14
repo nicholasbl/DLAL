@@ -12,10 +12,10 @@ template <class T, size_t C, size_t R, class Function>
 bool binary_test(std::array<T, C * R> const& a,
                  std::array<T, C * R> const& b,
                  Function                    f) {
-    MatrixCore<T, C, R> our_side;
+    Matrix<T, C, R> our_side;
     {
-        auto ma = MatrixCore<T, C, R>(a);
-        auto mb = MatrixCore<T, C, R>(b);
+        auto ma = Matrix<T, C, R>(a);
+        auto mb = Matrix<T, C, R>(b);
 
         our_side = f(ma, mb);
     }
@@ -37,9 +37,9 @@ bool binary_test(std::array<T, C * R> const& a,
 }
 
 template <class T, size_t C, size_t R, size_t C2, size_t R2, class Function>
-bool binary_test_2(MatrixCore<T, C, R> const&   a,
-                   MatrixCore<T, C2, R2> const& b,
-                   Function                     f) {
+bool binary_test_2(Matrix<T, C, R> const&   a,
+                   Matrix<T, C2, R2> const& b,
+                   Function                 f) {
 
     auto our_side = f(a, b);
 
@@ -75,9 +75,9 @@ bool binary_test_2(MatrixCore<T, C, R> const&   a,
 }
 
 template <class T, size_t C, size_t R, class Function>
-bool binary_vector_2(MatrixCore<T, C, R> const& a,
-                     Vector<T, R> const&        b,
-                     Function                   f) {
+bool binary_vector_2(Matrix<T, C, R> const& a,
+                     Vector<T, R> const&    b,
+                     Function               f) {
 
     auto our_side = f(a, b);
 
@@ -114,9 +114,9 @@ bool binary_vector_2(MatrixCore<T, C, R> const& a,
 
 template <class T, size_t C, size_t R, class Function>
 bool binary_scalar_test(std::array<T, C * R> const& a, T value, Function f) {
-    MatrixCore<T, C, R> our_side;
+    Matrix<T, C, R> our_side;
     {
-        auto ma = MatrixCore<T, C, R>(a);
+        auto ma = Matrix<T, C, R>(a);
 
         our_side = f(ma, value);
     }
@@ -145,10 +145,15 @@ std::array<T, N> make_filled(T value) {
 
 TEST_CASE("Matrix Library") {
 
-    SUBCASE("Constructors") {
+    SUBCASE("Constructors / Assignment") {
         Mat4 m1(10);
 
         REQUIRE(is_same(m1, make_filled<float, 16>(10.0f)));
+
+        Mat4 m1a(Mat3({ 1, 2, 3, 4, 5, 6, 7, 8, 9 }));
+        REQUIRE(is_same(
+            m1a, Mat4({ 1, 2, 3, 0, 4, 5, 6, 0, 7, 8, 9, 0, 0, 0, 0, 0 })));
+
 
         std::array<float, 16> src = {
             { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 }
@@ -249,8 +254,8 @@ TEST_CASE("Matrix Library") {
             };
 
             REQUIRE(binary_test_2<float>(
-                MatrixCore<float, 3, 4>(a_src),
-                MatrixCore<float, 4, 3>(b_src),
+                Matrix<float, 3, 4>(a_src),
+                Matrix<float, 4, 3>(b_src),
                 [](auto const& a, auto const& b) { return a * b; }));
         }
 

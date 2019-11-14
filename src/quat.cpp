@@ -20,12 +20,12 @@ bool fuzzy_eq(T a, T b, long double bound) {
 
 
 template <class T>
-bool is(QuaternionCore<T> const& a,
-        T                        x,
-        T                        y,
-        T                        z,
-        T                        w,
-        long double              limit = std::numeric_limits<T>::epsilon()) {
+bool is(Quaternion<T> const& a,
+        T                    x,
+        T                    y,
+        T                    z,
+        T                    w,
+        long double          limit = std::numeric_limits<T>::epsilon()) {
     bool ret = fuzzy_eq(a.x, x, limit) and fuzzy_eq(a.y, y, limit) and
                fuzzy_eq(a.z, z, limit) and fuzzy_eq(a.w, w, limit);
     if (!ret) {
@@ -38,9 +38,9 @@ bool is(QuaternionCore<T> const& a,
 }
 
 template <class T>
-bool verify(QuaternionCore<T> const& a,
-            glm::qua<T> const&       b,
-            long double limit = std::numeric_limits<T>::epsilon()) {
+bool verify(Quaternion<T> const& a,
+            glm::qua<T> const&   b,
+            long double          limit = std::numeric_limits<T>::epsilon()) {
     bool ret = fuzzy_eq(a.x, b.x, limit) and fuzzy_eq(a.y, b.y, limit) and
                fuzzy_eq(a.z, b.z, limit) and fuzzy_eq(a.w, b.w, limit);
     if (!ret) {
@@ -55,7 +55,7 @@ bool verify(QuaternionCore<T> const& a,
 
 template <class T, class Function>
 bool quat_check(Vector<T, 4> a, Function f) {
-    QuaternionCore<T> q1(Vec4(a.x, a.y, a.z, a.w));
+    Quaternion<T> q1(Vec4(a.x, a.y, a.z, a.w));
 
     glm::qua<T> q3(a.w, a.x, a.y, a.z);
 
@@ -64,8 +64,8 @@ bool quat_check(Vector<T, 4> a, Function f) {
 
 template <class T, class Function>
 bool binary_quat_check(Vector<T, 4> a, Vector<T, 4> b, Function f) {
-    QuaternionCore<T> q1(Vec4(a.x, a.y, a.z, a.w));
-    QuaternionCore<T> q2(Vec4(b.x, b.y, b.z, b.w));
+    Quaternion<T> q1(Vec4(a.x, a.y, a.z, a.w));
+    Quaternion<T> q2(Vec4(b.x, b.y, b.z, b.w));
 
     glm::qua<T> q3(a.w, a.x, a.y, a.z);
     glm::qua<T> q4(b.w, b.x, b.y, b.z);
@@ -87,8 +87,7 @@ bool is_same(Vector<T, N> const& a, glm::vec<M, T> const& b) {
 }
 
 template <class T, size_t C, size_t R>
-bool is_same(MatrixCore<T, C, R> const&         a,
-             glm::mat<int(C), int(R), T> const& b) {
+bool is_same(Matrix<T, C, R> const& a, glm::mat<int(C), int(R), T> const& b) {
     // weirdness due to how glm specifies their templates
     // static_assert(C == M);
     for (size_t i = 0; i < C * R; ++i) {
@@ -246,7 +245,7 @@ TEST_CASE("Quaternion") {
             Vec3 a = normalize(Vec3(-2, 2, -1));
             Vec3 b = normalize(Vec3(-1, -4, -1));
 
-            auto quat = look_at(a, b);
+            auto quat = look_at_lh(a, b);
 
             glm::vec3 ga = normalize(glm::vec3(-2, 2, -1));
             glm::vec3 gb = normalize(glm::vec3(-1, -4, -1));

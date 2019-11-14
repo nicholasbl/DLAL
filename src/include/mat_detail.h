@@ -1,12 +1,37 @@
 #ifndef LINALG_MATRIX_DETAIL_H
 #define LINALG_MATRIX_DETAIL_H
 
+#include "vec.h"
+
 #include <array>
 #include <cstddef>
 
 namespace dct {
 
 namespace matrix_detail {
+
+template <size_t N, class T, size_t M>
+constexpr Vector<T, N> upgrade(Vector<T, M> const& v) {
+    constexpr size_t C = vector_detail::cmin(N, M);
+    static_assert(C <= 4);
+    Vector<T, N> ret;
+    if constexpr (C == 1) {
+        ret.x = v.x;
+    } else if constexpr (C == 2) {
+        ret.x = v.x;
+        ret.y = v.y;
+    } else if constexpr (C == 3) {
+        ret.x = v.x;
+        ret.y = v.y;
+        ret.z = v.z;
+    } else if constexpr (C == 4) {
+        ret.x = v.x;
+        ret.y = v.y;
+        ret.z = v.z;
+        ret.w = v.w;
+    }
+    return ret;
+}
 
 
 #define MATRIX_UNARY(OP)                                                       \
@@ -29,7 +54,7 @@ namespace matrix_detail {
     return ret;
 
 #define MATRIX_BINARY_SCALAR_R(OP)                                             \
-    MatrixCore<T, C, R> ret;                                                   \
+    Matrix<T, C, R> ret;                                                       \
     if constexpr (C == 1) {                                                    \
         ret[0] = m[0] OP scalar;                                               \
     } else if constexpr (C == 2) {                                             \
@@ -48,7 +73,7 @@ namespace matrix_detail {
     return ret;
 
 #define MATRIX_BINARY_SCALAR_L(OP)                                             \
-    MatrixCore<T, C, R> ret;                                                   \
+    Matrix<T, C, R> ret;                                                       \
     if constexpr (C == 1) {                                                    \
         ret[0] = scalar OP m[0];                                               \
     } else if constexpr (C == 2) {                                             \
@@ -67,7 +92,7 @@ namespace matrix_detail {
     return ret;
 
 #define MATRIX_BINARY(OP)                                                      \
-    MatrixCore<T, C, R> ret;                                                   \
+    Matrix<T, C, R> ret;                                                       \
     if constexpr (C == 1) {                                                    \
         ret[0] = m[0] OP o[0];                                                 \
     } else if constexpr (C == 2) {                                             \
@@ -122,7 +147,7 @@ namespace matrix_detail {
     return m;
 
 #define MATRIX_BINARY_BOOL(OP)                                                 \
-    MatrixCore<bool, C, R> ret;                                                \
+    Matrix<bool, C, R> ret;                                                    \
     if constexpr (C == 1) {                                                    \
         ret[0] = m[0] OP o[0];                                                 \
     } else if constexpr (C == 2) {                                             \

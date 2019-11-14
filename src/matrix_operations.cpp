@@ -10,7 +10,7 @@ using namespace dct;
 
 template <class T, size_t C, size_t R, class Function>
 bool matrix_op_test(std::array<T, C * R> const& a, Function f) {
-    auto our_side = f(MatrixCore<T, C, R>(a));
+    auto our_side = f(Matrix<T, C, R>(a));
 
     glm::mat<C, R, T> ga;
 

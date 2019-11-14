@@ -3,7 +3,6 @@
 
 #include <cstddef>
 
-#include <immintrin.h>
 #include <smmintrin.h>
 
 namespace dct {
@@ -81,6 +80,8 @@ inline vec4 dot_vec(vec4 a, vec4 b) {
 
 
 // ==================
+
+// constexpr versions of these common functions
 
 template <class T>
 constexpr T cmin(T a, T b) {
