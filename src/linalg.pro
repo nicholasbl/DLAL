@@ -24,6 +24,7 @@ SOURCES += \
 
 HEADERS += \
     doctest.h \
+    include/linear_algebra.h \
     include/mat.h \
     include/mat_detail.h \
     include/mat_operations.h \

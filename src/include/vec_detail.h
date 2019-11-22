@@ -15,6 +15,8 @@ using vec __attribute__((vector_size(sizeof(T) * N))) = T;
 using ivec4 = vec<int, 4>;
 using vec4  = vec<float, 4>;
 
+// vec4 should be equivalent to __m128
+
 #ifdef __clang__
 #define SWIZZLE(A, X, Y, Z, W)                                                 \
     __builtin_shufflevector(A, dct::vector_detail::ivec4{ X, Y, Z, W })
