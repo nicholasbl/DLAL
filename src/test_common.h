@@ -2,27 +2,52 @@
 #define TEST_COMMON_H
 
 #include "include/mat.h"
-#include "include/vec.h"
+#include "include/packed_vec.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 template <class T, size_t C, size_t R>
-bool is_same(dct::Matrix<T, C, R> const& a, std::array<T, C * R> const& b) {
-    // weirdness due to how glm specifies their templates
-    // static_assert(C == M);
-    for (size_t i = 0; i < C * R; ++i) {
-        T delta = std::abs(a.data()[i] - b[i]);
-        if (std::numeric_limits<T>::epsilon() < delta) {
-            return false;
+glm::mat<int(C), int(R), T> to_glm(dct::mat<T, C, R> const& a) {
+    glm::mat<int(C), int(R), T> ret;
+
+    for (size_t i = 0; i < C; ++i) {
+        for (size_t j = 0; j < R; ++j) {
+            ret[i][j] = a[i][j];
+        }
+    }
+    return ret;
+}
+
+template <class T, size_t N>
+glm::vec<N, T> to_glm(dct::vec<T, N> const& a) {
+    glm::vec<N, T> ret;
+
+    for (size_t i = 0; i < N; ++i) {
+        ret[i] = a[i];
+    }
+    return ret;
+}
+
+template <class T, size_t C, size_t R>
+bool is_same(dct::mat<T, C, R> const&    a,
+             std::array<T, C * R> const& b,
+             T limit = std::numeric_limits<T>::epsilon()) {
+
+    for (size_t i = 0; i < C; ++i) {
+        for (size_t j = 0; j < R; ++j) {
+            T delta = std::abs(a[i][j] - b[i * R + j]);
+            if (limit < delta) {
+                return false;
+            }
         }
     }
     return true;
 }
 
 template <class T, size_t R>
-bool is_same(dct::Vector<T, R> const& a, glm::vec<int(R), T> const& b) {
+bool is_same(dct::vec<T, R> const& a, glm::vec<int(R), T> const& b) {
     // weirdness due to how glm specifies their templates
     // static_assert(C == M);
     for (size_t i = 0; i < R; ++i) {
@@ -35,22 +60,23 @@ bool is_same(dct::Vector<T, R> const& a, glm::vec<int(R), T> const& b) {
 }
 
 template <class T, size_t C, size_t R>
-bool is_same(dct::Matrix<T, C, R> const&        a,
-             glm::mat<int(C), int(R), T> const& b) {
-    // weirdness due to how glm specifies their templates
-    // static_assert(C == M);
-    for (size_t i = 0; i < C * R; ++i) {
-        T delta =
-            std::abs(a.data()[i] - glm::value_ptr(b)[static_cast<int>(i)]);
-        if (std::numeric_limits<T>::epsilon() < delta) {
-            return false;
+bool is_same(dct::mat<T, C, R> const&           a,
+             glm::mat<int(C), int(R), T> const& b,
+             T limit = std::numeric_limits<T>::epsilon()) {
+
+    for (size_t i = 0; i < C; ++i) {
+        for (size_t j = 0; j < R; ++j) {
+            T delta = std::abs(a[i][j] - b[i][j]);
+            if (limit < delta) {
+                return false;
+            }
         }
     }
     return true;
 }
 
 template <class T, size_t C, size_t R>
-bool is_same(dct::Matrix<T, C, R> const& a, dct::Matrix<T, C, R> const& b) {
+bool is_same(dct::mat<T, C, R> const& a, dct::mat<T, C, R> const& b) {
     return is_equal(a, b);
 }
 
@@ -59,9 +85,14 @@ bool is_same(T const& a, T const& b) {
     return a == b;
 }
 
+template <class T, size_t C, size_t R>
+bool operator==(dct::mat<T, C, R> const&           a,
+                glm::mat<int(C), int(R), T> const& b) {
+    return is_same(a, b);
+}
 
 template <class T, size_t N>
-bool operator==(dct::Vector<T, N> const& a, glm::vec<N, T> const& b) {
+bool operator==(dct::vec<T, N> const& a, glm::vec<N, T> const& b) {
     return is_same(a, b);
 }
 

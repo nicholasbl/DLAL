@@ -21,54 +21,54 @@ namespace dct {
 /// scale.
 ///
 class TMatrix {
-    Mat4 m_mat = Mat4::identity();
+    mat4 m_mat = mat4::identity();
 
 public:
     /// \brief Create a default transformation matrix (the identity)
     TMatrix() = default;
-    explicit TMatrix(Mat3 const& f) : m_mat(f) { m_mat[3][3] = 1; }
-    explicit TMatrix(Mat4 const& f) : m_mat(f) {}
-    explicit TMatrix(Quat const& q) : m_mat(mat4_from_unit_quaternion(q)) {}
+    explicit TMatrix(mat3 const& f) : m_mat(f) { m_mat[3][3] = 1; }
+    explicit TMatrix(mat4 const& f) : m_mat(f) {}
+    explicit TMatrix(quat const& q) : m_mat(mat4_from_unit_quaternion(q)) {}
     explicit TMatrix(std::array<float, 16> const& f) : m_mat(f) {}
 
 public: // setters
     /// \brief Add a translation by x,y,z
     void translate(float x, float y, float z);
     /// \brief Add a translation by a vector
-    void translate(Vec3 const&);
+    void translate(vec3 const&);
     /// \brief Clear the translation component
     void clear_translate();
 
     /// \brief Add a rotation by radians along the provided 3d axis
     void rotate(float radians, float x, float y, float z);
     /// \brief Add a rotation by a quaternion
-    void rotate(Quat const&);
+    void rotate(quat const&);
 
     /// \brief Add a scale by factors in x,y,z
     void scale(float x, float y, float z);
     /// \brief Add a scale by factors in vector form
-    void scale(Vec3 const&);
+    void scale(vec3 const&);
     /// \brief Add an isotropic scale
     void scale(float);
 
     /// \brief Clear the rotation and scale portion of the transform
     void clear_rotation_scale();
 
-    /// \brief Set a column to a Vec3. The vector is zero-extended
-    void set_column(size_t col, Vec3 const&);
-    /// \brief Set a column to a Vec4.
-    void set_column(size_t col, Vec4 const&);
+    /// \brief Set a column to a vec3. The vector is zero-extended
+    void set_column(size_t col, vec3 const&);
+    /// \brief Set a column to a vec4.
+    void set_column(size_t col, vec4 const&);
 
     /// \brief Get a column
-    Vec4 column(size_t col) const;
+    vec4 column(size_t col) const;
 
-    /// \brief Set a row to a Vec3. The vector is zero-extended
-    void set_row(size_t row, Vec3 const&);
-    /// \brief Set a row to a Vec4.
-    void set_row(size_t row, Vec4 const&);
+    /// \brief Set a row to a vec3. The vector is zero-extended
+    void set_row(size_t row, vec3 const&);
+    /// \brief Set a row to a vec4.
+    void set_row(size_t row, vec4 const&);
 
     /// \brief Get a row
-    Vec4 row(size_t row) const;
+    vec4 row(size_t row) const;
 
 
     /// \brief Obtain an inverse transform
@@ -82,16 +82,16 @@ public: // setters
     void transpose();
 
 public: // operation
-    /// \brief Transform a Vec3. The transform occurs using homogenous
+    /// \brief Transform a vec3. The transform occurs using homogenous
     /// coordinates
-    Vec3 operator*(Vec3 const&)const;
-    /// \brief Transform a Vec4.
-    Vec4 operator*(Vec4 const&)const;
+    vec3 operator*(vec3 const&)const;
+    /// \brief Transform a vec4.
+    vec4 operator*(vec4 const&)const;
 
     TMatrix operator*(TMatrix const&)const;
 
     /// \brief Transform a vector, without translation
-    Vec3 rotate_scale_only(Vec3 const&) const;
+    vec3 rotate_scale_only(vec3 const&) const;
 
     /// \brief Obtain a transformation matrix with only the rotation and scale
     /// components of this transform.
@@ -99,8 +99,8 @@ public: // operation
 
 
 public: // access
-    explicit operator Mat3() const;
-    explicit operator Mat4() const;
+    explicit operator mat3() const;
+    explicit operator mat4() const;
     explicit operator std::array<float, 16>() const;
 
     float*       data();
@@ -163,67 +163,69 @@ TMatrix make_ortho_matrix_lh(float left,
 /// \param center Coordinate of the view target
 /// \param up Vector that defines the 'up' direction. Must be normalized.
 ///
-TMatrix make_look_at_lh(Vec3 const& eye, Vec3 const& center, Vec3 const& up);
+TMatrix make_look_at_lh(vec3 const& eye, vec3 const& center, vec3 const& up);
 
 // Implementation ==============================================================
 
 
-inline void TMatrix::translate(Vec3 const& v) {
+inline void TMatrix::translate(vec3 const& v) {
     dct::translate_in_place(m_mat, v);
 }
 
 inline void TMatrix::translate(float x, float y, float z) {
-    dct::translate_in_place(m_mat, Vec3(x, y, z));
+    dct::translate_in_place(m_mat, vec3{ x, y, z });
 }
 
 inline void TMatrix::clear_translate() {
     auto const v = m_mat[3];
-    m_mat[3]     = Vec4(0, 0, 0, v.w);
+    m_mat[3]     = vec4{ 0, 0, 0, v.w };
 }
 
 inline void TMatrix::rotate(float radians, float x, float y, float z) {
-    Vec3 v(x, y, z);
+    vec3 v{ x, y, z };
     m_mat = dct::rotate(m_mat, radians, v);
 }
 
-inline void TMatrix::rotate(Quat const& q) {
+inline void TMatrix::rotate(quat const& q) {
     m_mat *= mat4_from_unit_quaternion(normalize(q));
 }
 
 inline void TMatrix::scale(float x, float y, float z) {
-    dct::scale_in_place(m_mat, { x, y, z });
+    dct::scale_in_place(m_mat, vec3{ x, y, z });
 }
 
-inline void TMatrix::scale(Vec3 const& v) { dct::scale_in_place(m_mat, v); }
+inline void TMatrix::scale(vec3 const& v) { dct::scale_in_place(m_mat, v); }
 
-inline void TMatrix::scale(float f) { dct::scale_in_place(m_mat, { f, f, f }); }
-
-inline void TMatrix::clear_rotation_scale() { m_mat.assign(Mat3::identity()); }
-
-inline void TMatrix::set_column(size_t col, Vec3 const& v) {
-    m_mat[col] = Vec4(v, 0);
+inline void TMatrix::scale(float f) {
+    dct::scale_in_place(m_mat, vec3{ f, f, f });
 }
 
-inline void TMatrix::set_column(size_t col, Vec4 const& v) {
-    m_mat[col] = Vec4(v);
+inline void TMatrix::clear_rotation_scale() { m_mat.assign(mat3::identity()); }
+
+inline void TMatrix::set_column(size_t col, vec3 const& v) {
+    m_mat[col] = vec4{ v.x, v.y, v.z, 0 };
+}
+
+inline void TMatrix::set_column(size_t col, vec4 const& v) {
+    m_mat[col] = vec4(v);
 }
 
 
-inline Vec4 TMatrix::column(size_t col) const { return m_mat[col]; }
+inline vec4 TMatrix::column(size_t col) const { return m_mat[col]; }
 
-inline void TMatrix::set_row(size_t row, Vec3 const& v) {
-    set_row(row, Vec4(v, 0));
+inline void TMatrix::set_row(size_t row, vec3 const& v) {
+    set_row(row, vec4{ v.x, v.y, v.z, 0 });
 }
 
-inline void TMatrix::set_row(size_t row, Vec4 const& v) {
+inline void TMatrix::set_row(size_t row, vec4 const& v) {
     m_mat[0][row] = v.x;
     m_mat[1][row] = v.y;
     m_mat[2][row] = v.z;
     m_mat[3][row] = v.w;
 }
 
-inline Vec4 TMatrix::row(size_t row) const {
-    return Vec4(m_mat[0][row], m_mat[1][row], m_mat[2][row], m_mat[3][row]);
+inline vec4 TMatrix::row(size_t row) const {
+    return vec4{ m_mat[0][row], m_mat[1][row], m_mat[2][row], m_mat[3][row] };
 }
 
 inline TMatrix TMatrix::inverted() const {
@@ -239,34 +241,34 @@ inline TMatrix TMatrix::transposed() const {
 inline void TMatrix::transpose() { m_mat = dct::transpose(m_mat); }
 
 
-inline Vec3 TMatrix::operator*(Vec3 const& v) const {
-    auto const r = operator*(Vec4(v, 1));
-    return Vec3(r) / r.w;
+inline vec3 TMatrix::operator*(vec3 const& v) const {
+    auto const r = operator*(vec4{ v.x, v.y, v.z, 1 });
+    return vec3{ r.x, r.y, r.z } / r.w;
 }
 
-inline Vec4 TMatrix::operator*(Vec4 const& v) const { return m_mat * v; }
+inline vec4 TMatrix::operator*(vec4 const& v) const { return m_mat * v; }
 
 inline TMatrix TMatrix::operator*(TMatrix const& m) const {
     return TMatrix(m_mat * m.m_mat);
 }
 
-inline Vec3 TMatrix::rotate_scale_only(Vec3 const& v) const {
-    Mat3 const lm = Mat3(m_mat);
+inline vec3 TMatrix::rotate_scale_only(vec3 const& v) const {
+    mat3 const lm = mat3(m_mat);
     return lm * v;
 }
 
-inline TMatrix::operator Mat3() const { return Mat3(m_mat); }
+inline TMatrix::operator mat3() const { return mat3(m_mat); }
 
-inline TMatrix::operator Mat4() const { return m_mat; }
+inline TMatrix::operator mat4() const { return m_mat; }
 
 inline TMatrix::operator std::array<float, 16>() const {
-    static_assert(sizeof(Mat4) == sizeof(std::array<float, 16>), "");
+    static_assert(sizeof(mat4) == sizeof(std::array<float, 16>), "");
     return *reinterpret_cast<std::array<float, 16> const*>(&m_mat);
 }
 
-inline float* TMatrix::data() { return m_mat.data(); }
+inline float* TMatrix::data() { return dct::data(m_mat); }
 
-inline float const* TMatrix::data() const { return m_mat.data(); }
+inline float const* TMatrix::data() const { return dct::data(m_mat); }
 
 //
 
@@ -280,7 +282,7 @@ make_perspective_matrix_lh(float fovy, float aspect, float zNear, float zFar) {
     float const yscale = 1.0f / std::tan(fovy / 2.0f);
     float const xscale = yscale / aspect;
 
-    auto mat  = Mat4(0);
+    auto mat  = mat4(0);
     mat[0][0] = xscale;
     mat[1][1] = -yscale;
     mat[2][3] = 1.0f;
@@ -297,7 +299,7 @@ inline TMatrix make_frustum_matrix_lh(float left,
                                       float top,
                                       float near,
                                       float far) {
-    auto mat  = Mat4(0);
+    auto mat  = mat4(0);
     mat[0][0] = 2.0f * near / (right - left);
     mat[1][1] = 2.0f * near / (top - bottom);
     mat[2][0] = (right + left) / (right - left);
@@ -314,7 +316,7 @@ inline TMatrix make_ortho_matrix_lh(float left,
                                     float top,
                                     float zNear,
                                     float zFar) {
-    auto mat  = Mat4(0);
+    auto mat  = mat4(0);
     mat[0][0] = 2.0f / (right - left);
     mat[1][1] = 2.0f / (top - bottom);
     mat[2][2] = 1.0f / (zFar - zNear);
@@ -326,12 +328,12 @@ inline TMatrix make_ortho_matrix_lh(float left,
 }
 
 inline TMatrix
-make_look_at_lh(Vec3 const& eye, Vec3 const& center, Vec3 const& up) {
-    Vec3 const f(normalize(center - eye));
-    Vec3 const s(normalize(cross(up, f)));
-    Vec3 const u(cross(f, s));
+make_look_at_lh(vec3 const& eye, vec3 const& center, vec3 const& up) {
+    vec3 const f(normalize(center - eye));
+    vec3 const s(normalize(cross(up, f)));
+    vec3 const u(cross(f, s));
 
-    auto mat  = Mat4::identity();
+    auto mat  = mat4::identity();
     mat[0][0] = s.x;
     mat[1][0] = s.y;
     mat[2][0] = s.z;

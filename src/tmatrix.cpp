@@ -12,9 +12,9 @@ TEST_CASE("TMatrix Library") {
     SUBCASE("Basics") {
 
         TMatrix a;
-        auto    ab = Mat4(a);
+        auto    ab = mat4(a);
 
         REQUIRE(is_same(
-            ab, Mat4({ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 })));
+            ab, mat4({ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 })));
     }
 }

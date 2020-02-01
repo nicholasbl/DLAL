@@ -1,5 +1,6 @@
 #include "include/quat.h"
 #include "doctest.h"
+#include "test_common.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -20,7 +21,7 @@ bool fuzzy_eq(T a, T b, long double bound) {
 
 
 template <class T>
-bool is(Quaternion<T> const& a,
+bool is(quaternion<T> const& a,
         T                    x,
         T                    y,
         T                    z,
@@ -38,7 +39,7 @@ bool is(Quaternion<T> const& a,
 }
 
 template <class T>
-bool verify(Quaternion<T> const& a,
+bool verify(quaternion<T> const& a,
             glm::qua<T> const&   b,
             long double          limit = std::numeric_limits<T>::epsilon()) {
     bool ret = fuzzy_eq(a.x, b.x, limit) and fuzzy_eq(a.y, b.y, limit) and
@@ -54,64 +55,34 @@ bool verify(Quaternion<T> const& a,
 }
 
 template <class T, class Function>
-bool quat_check(Vector<T, 4> a, Function f) {
-    Quaternion<T> q1(Vec4(a.x, a.y, a.z, a.w));
+bool quat_check(quaternion<T> a, Function f) {
 
     glm::qua<T> q3(a.w, a.x, a.y, a.z);
 
-    return f(q1, q3);
+    return f(a, q3);
 }
 
 template <class T, class Function>
-bool binary_quat_check(Vector<T, 4> a, Vector<T, 4> b, Function f) {
-    Quaternion<T> q1(Vec4(a.x, a.y, a.z, a.w));
-    Quaternion<T> q2(Vec4(b.x, b.y, b.z, b.w));
+bool binary_quat_check(quaternion<T> a, quaternion<T> b, Function f) {
 
     glm::qua<T> q3(a.w, a.x, a.y, a.z);
     glm::qua<T> q4(b.w, b.x, b.y, b.z);
 
-    return f(q1, q2, q3, q4);
+    return f(a, b, q3, q4);
 }
 
-template <class T, size_t N, int M>
-bool is_same(Vector<T, N> const& a, glm::vec<M, T> const& b) {
-    // weirdness due to how glm specifies their templates
-    static_assert(N == M);
-    for (size_t i = 0; i < N; ++i) {
-        T delta = std::abs(a[i] - b[static_cast<int>(i)]);
-        if (std::numeric_limits<T>::epsilon() < delta) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <class T, size_t C, size_t R>
-bool is_same(Matrix<T, C, R> const& a, glm::mat<int(C), int(R), T> const& b) {
-    // weirdness due to how glm specifies their templates
-    // static_assert(C == M);
-    for (size_t i = 0; i < C * R; ++i) {
-        T delta =
-            std::abs(a.data()[i] - glm::value_ptr(b)[static_cast<int>(i)]);
-        if (std::numeric_limits<T>::epsilon() < delta) {
-            return false;
-        }
-    }
-    return true;
-}
-
-TEST_CASE("Quaternion") {
+TEST_CASE("quaternion") {
 
     SUBCASE("Constructors") {
-        Quat q;
+        quat q;
 
         REQUIRE(is(q, 0.0f, 0.0f, 0.0f, 1.0f));
 
-        Quat q2(1.0, { 2.0f, 3.0f, 4.0f });
+        quat q2(1.0, vec3{ 2.0f, 3.0f, 4.0f });
 
         REQUIRE(is(q2, 2.0f, 3.0f, 4.0f, 1.0f));
 
-        Quat q3(Vec4(2.0f, 3.0f, 4.0f, 1.0f));
+        quat q3(vec4{ 2.0f, 3.0f, 4.0f, 1.0f });
 
         REQUIRE(is(q3, 2.0f, 3.0f, 4.0f, 1.0f));
     }
@@ -145,7 +116,8 @@ TEST_CASE("Quaternion") {
 
         REQUIRE(binary_quat_check<float>(
             { 1, 2, 3, 4 }, { 1, 5, 7, 9 }, [](auto q1, auto, auto r1, auto) {
-                return is_same(q1 * Vec3(1, 3, -1), r1 * glm::vec3(1, 3, -1));
+                return is_same(q1 * vec3{ 1, 3, -1 },
+                               r1 * glm::vec3{ 1, 3, -1 });
             }));
     }
 
@@ -165,42 +137,42 @@ TEST_CASE("Quaternion") {
         }));
 
         {
-            Mat3      m1({ 1, 2, 3, 0, 3, 1, 4, 0, 1 });
+            mat3      m1({ 1, 2, 3, 0, 3, 1, 4, 0, 1 });
             glm::mat3 m2(1, 2, 3, 0, 3, 1, 4, 0, 1);
 
             REQUIRE(verify(quaternion_from_matrix(m1), glm::quat_cast(m2)));
         }
 
         {
-            Mat3      m1({ 1, 2, 3, 0, -3, 1, 4, 0, 1 });
+            mat3      m1({ 1, 2, 3, 0, -3, 1, 4, 0, 1 });
             glm::mat3 m2(1, 2, 3, 0, -3, 1, 4, 0, 1);
 
             REQUIRE(verify(quaternion_from_matrix(m1), glm::quat_cast(m2)));
         }
 
         {
-            Mat3      m1({ 1, 2, 3, 0, -4, 1, 4, 0, 1 });
+            mat3      m1({ 1, 2, 3, 0, -4, 1, 4, 0, 1 });
             glm::mat3 m2(1, 2, 3, 0, -4, 1, 4, 0, 1);
 
             REQUIRE(verify(quaternion_from_matrix(m1), glm::quat_cast(m2)));
         }
 
         {
-            Mat3      m1({ 2, 2, 3, 0, -4, 1, 4, 0, 1 });
+            mat3      m1({ 2, 2, 3, 0, -4, 1, 4, 0, 1 });
             glm::mat3 m2(2, 2, 3, 0, -4, 1, 4, 0, 1);
 
             REQUIRE(verify(quaternion_from_matrix(m1), glm::quat_cast(m2)));
         }
 
         {
-            Mat3      m1({ -11, 2, 3, 0, 5, 1, 4, 0, 1 });
+            mat3      m1({ -11, 2, 3, 0, 5, 1, 4, 0, 1 });
             glm::mat3 m2(-11, 2, 3, 0, 5, 1, 4, 0, 1);
 
             REQUIRE(verify(quaternion_from_matrix(m1), glm::quat_cast(m2)));
         }
 
         {
-            Mat3      m1({ -10, 2, 3, 0, 5, 1, 4, 0, 1 });
+            mat3      m1({ -10, 2, 3, 0, 5, 1, 4, 0, 1 });
             glm::mat3 m2(-10, 2, 3, 0, 5, 1, 4, 0, 1);
 
             REQUIRE(verify(quaternion_from_matrix(m1), glm::quat_cast(m2)));
@@ -210,8 +182,8 @@ TEST_CASE("Quaternion") {
     SUBCASE("Other") {
         // we use different approaches, thus we loosen the bounds just a bit
         {
-            Vec3 a = normalize(Vec3(1, 2, -1));
-            Vec3 b = normalize(Vec3(-1, -1, -1));
+            vec3 a = normalize(vec3{ 1, 2, -1 });
+            vec3 b = normalize(vec3{ -1, -1, -1 });
 
             auto quat = rotation_from_to(a, b);
 
@@ -225,8 +197,8 @@ TEST_CASE("Quaternion") {
         }
 
         {
-            Vec3 a = normalize(Vec3(-2, 2, -1));
-            Vec3 b = normalize(Vec3(-1, -4, -1));
+            vec3 a = normalize(vec3{ -2, 2, -1 });
+            vec3 b = normalize(vec3{ -1, -4, -1 });
 
             auto quat = rotation_from_to(a, b);
 
@@ -242,8 +214,8 @@ TEST_CASE("Quaternion") {
         // look at
 
         {
-            Vec3 a = normalize(Vec3(-2, 2, -1));
-            Vec3 b = normalize(Vec3(-1, -4, -1));
+            vec3 a = normalize(vec3{ -2, 2, -1 });
+            vec3 b = normalize(vec3{ -1, -4, -1 });
 
             auto quat = look_at_lh(a, b);
 
@@ -258,7 +230,7 @@ TEST_CASE("Quaternion") {
         // from angles
 
         {
-            Vec3 a(-2, 2, -1);
+            vec3 a{ -2, 2, -1 };
 
             auto quat = from_angles(a);
 
@@ -272,7 +244,7 @@ TEST_CASE("Quaternion") {
         // angle axis
 
         {
-            Vec3 a(-2, 2, -1);
+            vec3 a{ -2, 2, -1 };
 
             auto quat = from_angle_axis(.25f, a);
 

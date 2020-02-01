@@ -1,14 +1,14 @@
 #ifndef LINALG_VECTOR_TRIG_H
 #define LINALG_VECTOR_TRIG_H
 
-#include "vec.h"
+#include "packed_vec.h"
 
 #include <cmath>
 
 namespace dct {
 
 #define VECTOR_OP(OP)                                                          \
-    Vector<T, N> ret;                                                          \
+    vec<T, N> ret;                                                             \
     if constexpr (N == 1) {                                                    \
         ret.x = OP(a.x);                                                       \
     } else if constexpr (N == 2) {                                             \
@@ -26,36 +26,36 @@ namespace dct {
     }                                                                          \
     return ret;
 
-template <class T, size_t N>
-Vector<T, N> acos(Vector<T, N> const& a) {
+template <class T, int N>
+vec<T, N> acos(vec<T, N> const& a) {
     VECTOR_OP(std::acos)
 }
-template <class T, size_t N>
-Vector<T, N> cos(Vector<T, N> const& a) {
+template <class T, int N>
+vec<T, N> cos(vec<T, N> const& a) {
     VECTOR_OP(std::cos)
 }
-template <class T, size_t N>
-Vector<T, N> asin(Vector<T, N> const& a) {
+template <class T, int N>
+vec<T, N> asin(vec<T, N> const& a) {
     VECTOR_OP(std::asin)
 }
-template <class T, size_t N>
-Vector<T, N> sin(Vector<T, N> const& a) {
+template <class T, int N>
+vec<T, N> sin(vec<T, N> const& a) {
     VECTOR_OP(std::sin)
 }
-template <class T, size_t N>
-Vector<T, N> atan(Vector<T, N> const& a) {
+template <class T, int N>
+vec<T, N> atan(vec<T, N> const& a) {
     VECTOR_OP(std::atan)
 }
-template <class T, size_t N>
-Vector<T, N> tan(Vector<T, N> const& a) {
+template <class T, int N>
+vec<T, N> tan(vec<T, N> const& a) {
     VECTOR_OP(std::tan)
 }
-template <class T, size_t N>
-Vector<T, N> exp(Vector<T, N> const& a) {
+template <class T, int N>
+vec<T, N> exp(vec<T, N> const& a) {
     VECTOR_OP(std::exp)
 }
-template <class T, size_t N>
-Vector<T, N> log(Vector<T, N> const& a) {
+template <class T, int N>
+vec<T, N> log(vec<T, N> const& a) {
     VECTOR_OP(std::log)
 }
 

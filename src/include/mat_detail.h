@@ -10,25 +10,19 @@ namespace dct {
 
 namespace matrix_detail {
 
-template <size_t N, class T, size_t M>
-constexpr Vector<T, N> upgrade(Vector<T, M> const& v) {
+template <int N, class T, int M>
+constexpr vec<T, N> upgrade(vec<T, M> const& v) {
     constexpr size_t C = vector_detail::cmin(N, M);
     static_assert(C <= 4);
-    Vector<T, N> ret;
+    vec<T, N> ret;
     if constexpr (C == 1) {
-        ret.x = v.x;
+        return vec<T, N>{ v.x };
     } else if constexpr (C == 2) {
-        ret.x = v.x;
-        ret.y = v.y;
+        return vec<T, N>{ v.x, v.y };
     } else if constexpr (C == 3) {
-        ret.x = v.x;
-        ret.y = v.y;
-        ret.z = v.z;
+        return vec<T, N>{ v.x, v.y, v.z };
     } else if constexpr (C == 4) {
-        ret.x = v.x;
-        ret.y = v.y;
-        ret.z = v.z;
-        ret.w = v.w;
+        return vec<T, N>{ v.x, v.y, v.z, v.w };
     }
     return ret;
 }
@@ -54,7 +48,7 @@ constexpr Vector<T, N> upgrade(Vector<T, M> const& v) {
     return ret;
 
 #define MATRIX_BINARY_SCALAR_R(OP)                                             \
-    Matrix<T, C, R> ret;                                                       \
+    mat<T, C, R> ret;                                                          \
     if constexpr (C == 1) {                                                    \
         ret[0] = m[0] OP scalar;                                               \
     } else if constexpr (C == 2) {                                             \
@@ -73,7 +67,7 @@ constexpr Vector<T, N> upgrade(Vector<T, M> const& v) {
     return ret;
 
 #define MATRIX_BINARY_SCALAR_L(OP)                                             \
-    Matrix<T, C, R> ret;                                                       \
+    mat<T, C, R> ret;                                                          \
     if constexpr (C == 1) {                                                    \
         ret[0] = scalar OP m[0];                                               \
     } else if constexpr (C == 2) {                                             \
@@ -92,7 +86,7 @@ constexpr Vector<T, N> upgrade(Vector<T, M> const& v) {
     return ret;
 
 #define MATRIX_BINARY(OP)                                                      \
-    Matrix<T, C, R> ret;                                                       \
+    mat<T, C, R> ret;                                                          \
     if constexpr (C == 1) {                                                    \
         ret[0] = m[0] OP o[0];                                                 \
     } else if constexpr (C == 2) {                                             \
@@ -147,7 +141,7 @@ constexpr Vector<T, N> upgrade(Vector<T, M> const& v) {
     return m;
 
 #define MATRIX_BINARY_BOOL(OP)                                                 \
-    Matrix<bool, C, R> ret;                                                    \
+    mat<int, C, R> ret;                                                        \
     if constexpr (C == 1) {                                                    \
         ret[0] = m[0] OP o[0];                                                 \
     } else if constexpr (C == 2) {                                             \

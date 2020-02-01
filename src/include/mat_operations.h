@@ -6,8 +6,8 @@
 namespace dct {
 
 template <class T, size_t C, size_t R>
-Matrix<T, R, C> transpose(Matrix<T, C, R> const& m) {
-    Matrix<T, R, C> ret;
+mat<T, R, C> transpose(mat<T, C, R> const& m) {
+    mat<T, R, C> ret;
     for (size_t c = 0; c < C; c++) {
         for (size_t r = 0; r < R; r++) {
             ret[r][c] = m[c][r];
@@ -17,8 +17,8 @@ Matrix<T, R, C> transpose(Matrix<T, C, R> const& m) {
 }
 
 template <class T>
-Matrix<T, 2, 2> transpose(Matrix<T, 2, 2> const& m) {
-    Matrix<T, 2, 2> ret;
+mat<T, 2, 2> transpose(mat<T, 2, 2> const& m) {
+    mat<T, 2, 2> ret;
     ret[0][0] = m[0][0];
     ret[0][1] = m[1][0];
     ret[1][0] = m[0][1];
@@ -27,8 +27,8 @@ Matrix<T, 2, 2> transpose(Matrix<T, 2, 2> const& m) {
 }
 
 template <class T>
-Matrix<T, 3, 3> transpose(Matrix<T, 3, 3> const& m) {
-    Matrix<T, 3, 3> ret;
+mat<T, 3, 3> transpose(mat<T, 3, 3> const& m) {
+    mat<T, 3, 3> ret;
     ret[0][0] = m[0][0];
     ret[0][1] = m[1][0];
     ret[0][2] = m[2][0];
@@ -44,8 +44,8 @@ Matrix<T, 3, 3> transpose(Matrix<T, 3, 3> const& m) {
 }
 
 template <class T>
-Matrix<T, 4, 4> transpose(Matrix<T, 4, 4> const& m) {
-    Matrix<T, 4, 4> ret;
+mat<T, 4, 4> transpose(mat<T, 4, 4> const& m) {
+    mat<T, 4, 4> ret;
     ret[0][0] = m[0][0];
     ret[0][1] = m[1][0];
     ret[0][2] = m[2][0];
@@ -69,12 +69,12 @@ Matrix<T, 4, 4> transpose(Matrix<T, 4, 4> const& m) {
 }
 
 template <class T>
-inline T determinant(Matrix<T, 2, 2> const& m) {
+inline T determinant(mat<T, 2, 2> const& m) {
     return m[0][0] * m[1][1] - m[1][0] * m[0][1];
 }
 
 template <class T>
-inline T determinant(Matrix<T, 3, 3> const& m) {
+inline T determinant(mat<T, 3, 3> const& m) {
 
     T const a = m[0][0];
     T const b = m[1][0];
@@ -92,7 +92,7 @@ inline T determinant(Matrix<T, 3, 3> const& m) {
 }
 
 template <class T>
-inline T determinant(Matrix<T, 4, 4> const& m) {
+inline T determinant(mat<T, 4, 4> const& m) {
     T const a = m[2][2] * m[3][3] - m[3][2] * m[2][3];
     T const b = m[2][1] * m[3][3] - m[3][1] * m[2][3];
     T const c = m[2][1] * m[3][2] - m[3][1] * m[2][2];
@@ -100,30 +100,30 @@ inline T determinant(Matrix<T, 4, 4> const& m) {
     T const e = m[2][0] * m[3][2] - m[3][0] * m[2][2];
     T const f = m[2][0] * m[3][1] - m[3][0] * m[2][1];
 
-    Vector<T, 4> const coeffs(+(m[1][1] * a - m[1][2] * b + m[1][3] * c),
-                              -(m[1][0] * a - m[1][2] * d + m[1][3] * e),
-                              +(m[1][0] * b - m[1][1] * d + m[1][3] * f),
-                              -(m[1][0] * c - m[1][1] * e + m[1][2] * f));
+    vec<T, 4> const coeffs{ +(m[1][1] * a - m[1][2] * b + m[1][3] * c),
+                            -(m[1][0] * a - m[1][2] * d + m[1][3] * e),
+                            +(m[1][0] * b - m[1][1] * d + m[1][3] * f),
+                            -(m[1][0] * c - m[1][1] * e + m[1][2] * f) };
 
     return component_sum(m[0] * coeffs);
 }
 
 
 template <class T>
-auto inverse(Matrix<T, 2, 2> const& m) {
+auto inverse(mat<T, 2, 2> const& m) {
     T const one_over_det = static_cast<T>(1) / determinant(m);
 
-    return Matrix<T, 2, 2>(m[1][1] * one_over_det,
-                           -m[0][1] * one_over_det,
-                           -m[1][0] * one_over_det,
-                           m[0][0] * one_over_det);
+    return mat<T, 2, 2>(m[1][1] * one_over_det,
+                        -m[0][1] * one_over_det,
+                        -m[1][0] * one_over_det,
+                        m[0][0] * one_over_det);
 }
 
 template <class T>
-auto inverse(Matrix<T, 3, 3> const& m) {
+auto inverse(mat<T, 3, 3> const& m) {
     T const one_over_det = static_cast<T>(1) / determinant(m);
 
-    Matrix<T, 3, 3> ret;
+    mat<T, 3, 3> ret;
     ret[0][0] = +(m[1][1] * m[2][2] - m[2][1] * m[1][2]) * one_over_det;
     ret[1][0] = -(m[1][0] * m[2][2] - m[2][0] * m[1][2]) * one_over_det;
     ret[2][0] = +(m[1][0] * m[2][1] - m[2][0] * m[1][1]) * one_over_det;
@@ -154,55 +154,54 @@ inline __m128 _matrix2x2_mult_adj(__m128 vec1, __m128 vec2) {
            (SWIZZLE(vec1, 1, 0, 3, 2) * SWIZZLE(vec2, 2, 1, 2, 1));
 }
 
-inline auto transform_inverse(Mat4 const& m) {
+inline auto transform_inverse(mat4 const& m) {
     using namespace vector_detail;
     // implementation based off Eric Zhang's
     // https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
     constexpr float SMALL_VALUE = 1E-8F;
 
-    Mat4 ret;
+    mat4 ret;
 
-    __m128 t0     = shuffle<0, 1, 0, 1>(m.as_vec[0], m.as_vec[1]);
-    __m128 t1     = shuffle<2, 3, 2, 3>(m.as_vec[0], m.as_vec[1]);
-    ret.as_vec[0] = shuffle<0, 2, 0, 3>(t0, m.as_vec[2]);
-    ret.as_vec[1] = shuffle<1, 3, 1, 3>(t0, m.as_vec[2]);
-    ret.as_vec[2] = shuffle<0, 2, 2, 3>(t1, m.as_vec[2]);
+    __m128 t0 = shuffle<0, 1, 0, 1>(m[0], m[1]);
+    __m128 t1 = shuffle<2, 3, 2, 3>(m[0], m[1]);
+    ret[0]    = shuffle<0, 2, 0, 3>(t0, m[2]);
+    ret[1]    = shuffle<1, 3, 1, 3>(t0, m[2]);
+    ret[2]    = shuffle<0, 2, 2, 3>(t1, m[2]);
 
-    __m128 size_sqr = ret.as_vec[0] * ret.as_vec[0];
-    size_sqr += ret.as_vec[1] * ret.as_vec[1];
-    size_sqr += ret.as_vec[2] * ret.as_vec[2];
+    __m128 size_sqr = ret[0] * ret[0];
+    size_sqr += ret[1] * ret[1];
+    size_sqr += ret[2] * ret[2];
 
     __m128 one{ 1.0f };
     __m128 rSizeSqr = _mm_blendv_ps(
         (one / size_sqr), one, _mm_cmplt_ps(size_sqr, __m128{ SMALL_VALUE }));
 
-    ret.as_vec[0] = (ret.as_vec[0] * rSizeSqr);
-    ret.as_vec[1] = (ret.as_vec[1] * rSizeSqr);
-    ret.as_vec[2] = (ret.as_vec[2] * rSizeSqr);
+    ret[0] = (ret[0] * rSizeSqr);
+    ret[1] = (ret[1] * rSizeSqr);
+    ret[2] = (ret[2] * rSizeSqr);
 
     // last line
-    ret.as_vec[3] = (ret.as_vec[0] * swizzle<0>(m.as_vec[3]));
-    ret.as_vec[3] = (ret.as_vec[3] + (ret.as_vec[1] * swizzle<1>(m.as_vec[3])));
-    ret.as_vec[3] = (ret.as_vec[3] + (ret.as_vec[2] * swizzle<2>(m.as_vec[3])));
-    ret.as_vec[3] = _mm_setr_ps(0.f, 0.f, 0.f, 1.f) - ret.as_vec[3];
+    ret[3] = (ret[0] * swizzle<0>(m[3]));
+    ret[3] = (ret[3] + (ret[1] * swizzle<1>(m[3])));
+    ret[3] = (ret[3] + (ret[2] * swizzle<2>(m[3])));
+    ret[3] = _mm_setr_ps(0.f, 0.f, 0.f, 1.f) - ret[3];
 
     return ret;
 }
 
-inline auto inverse(Mat4 const& m) {
+inline auto inverse(mat4 const& m) {
     using namespace vector_detail;
     // implementation based off Eric Zhang's
     // https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
 
-    __m128 const A = shuffle<0, 1, 0, 1>(m.as_vec[0], m.as_vec[1]);
-    __m128 const B = shuffle<2, 3, 2, 3>(m.as_vec[0], m.as_vec[1]);
-    __m128 const C = shuffle<0, 1, 0, 1>(m.as_vec[2], m.as_vec[3]);
-    __m128 const D = shuffle<2, 3, 2, 3>(m.as_vec[2], m.as_vec[3]);
+    __m128 const A = shuffle<0, 1, 0, 1>(m[0], m[1]);
+    __m128 const B = shuffle<2, 3, 2, 3>(m[0], m[1]);
+    __m128 const C = shuffle<0, 1, 0, 1>(m[2], m[3]);
+    __m128 const D = shuffle<2, 3, 2, 3>(m[2], m[3]);
 
-    __m128 const det_sub = (shuffle<0, 2, 4, 6>(m.as_vec[0], m.as_vec[2]) *
-                            shuffle<1, 3, 5, 7>(m.as_vec[1], m.as_vec[3])) -
-                           (shuffle<1, 3, 5, 7>(m.as_vec[0], m.as_vec[2]) *
-                            shuffle<0, 2, 4, 6>(m.as_vec[1], m.as_vec[3]));
+    __m128 const det_sub =
+        (shuffle<0, 2, 4, 6>(m[0], m[2]) * shuffle<1, 3, 5, 7>(m[1], m[3])) -
+        (shuffle<1, 3, 5, 7>(m[0], m[2]) * shuffle<0, 2, 4, 6>(m[1], m[3]));
     __m128 const det_A = swizzle<0>(det_sub);
     __m128 const det_B = swizzle<1>(det_sub);
     __m128 const det_C = swizzle<2>(det_sub);
@@ -231,11 +230,11 @@ inline auto inverse(Mat4 const& m) {
     Z = (Z * i_det_M);
     W = (W * i_det_M);
 
-    Mat4 ret;
-    ret.as_vec[0] = shuffle<3, 1, 7, 5>(X, Y);
-    ret.as_vec[1] = shuffle<2, 0, 6, 4>(X, Y);
-    ret.as_vec[2] = shuffle<3, 1, 7, 5>(Z, W);
-    ret.as_vec[3] = shuffle<2, 0, 6, 4>(Z, W);
+    mat4 ret;
+    ret[0] = shuffle<3, 1, 7, 5>(X, Y);
+    ret[1] = shuffle<2, 0, 6, 4>(X, Y);
+    ret[2] = shuffle<3, 1, 7, 5>(Z, W);
+    ret[3] = shuffle<2, 0, 6, 4>(Z, W);
 
     return ret;
 }

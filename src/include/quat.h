@@ -2,16 +2,16 @@
 #define LINALG_QUAT_H
 
 #include "mat.h"
-#include "vec.h"
+#include "packed_vec.h"
 
 #include "vec_trig.h"
 
 namespace dct {
 
 template <class T>
-struct Quaternion {
+struct quaternion {
     union {
-        Vector<T, 4> storage;
+        vec<T, 4> storage;
         struct {
             T x;
             T y;
@@ -21,42 +21,43 @@ struct Quaternion {
     };
 
 public:
-    Quaternion() : storage(0, 0, 0, 1) {}
-    Quaternion(T w, Vector<T, 3> const& v) : storage(v, w) {}
-    explicit Quaternion(Vector<T, 4> const& f) : storage(f) {}
+    quaternion() : storage{ 0, 0, 0, 1 } {}
+    quaternion(T x, T y, T z, T w) : storage{ x, y, z, w } {}
+    quaternion(T w, vec<T, 3> const& v) : storage{ v.x, v.y, v.z, w } {}
+    explicit quaternion(vec<T, 4> const& f) : storage(f) {}
 
 
 public:
-    explicit operator Vector<T, 4>() const { return storage; }
+    explicit operator vec<T, 4>() const { return storage; }
 };
 
-using Quat  = Quaternion<float>;
-using DQuat = Quaternion<double>;
+using quat  = quaternion<float>;
+using dquat = quaternion<double>;
 
 
 // Operators ===================================================================
 
 template <class T>
-Quaternion<T> operator+(Quaternion<T> const& q, Quaternion<T> const& r) {
-    return Quaternion<T>(q.storage + r.storage);
+quaternion<T> operator+(quaternion<T> const& q, quaternion<T> const& r) {
+    return quaternion<T>(q.storage + r.storage);
 }
 
 template <class T>
-Quaternion<T> operator-(Quaternion<T> const& q, Quaternion<T> const& r) {
-    return Quaternion<T>(q.storage - r.storage);
+quaternion<T> operator-(quaternion<T> const& q, quaternion<T> const& r) {
+    return quaternion<T>(q.storage - r.storage);
 }
 
 template <class T>
-Quaternion<T> operator*(Quaternion<T> const& q, T scalar) {
-    return Quaternion<T>(q.storage * scalar);
+quaternion<T> operator*(quaternion<T> const& q, T scalar) {
+    return quaternion<T>(q.storage * scalar);
 }
 
 // note that rotating a non-unit quaternion can do odd things
 
 template <class T>
-Quaternion<T> operator*(Quaternion<T> const& q, Quaternion<T> const& r) {
+quaternion<T> operator*(quaternion<T> const& q, quaternion<T> const& r) {
 
-    Quaternion<T> ret;
+    quaternion<T> ret;
 
     ret.x = q.w * r.x + q.x * r.w + q.y * r.z - q.z * r.y;
     ret.y = q.w * r.y + q.y * r.w + q.z * r.x - q.x * r.z;
@@ -67,10 +68,10 @@ Quaternion<T> operator*(Quaternion<T> const& q, Quaternion<T> const& r) {
 }
 
 template <class T>
-Vector<T, 3> operator*(Quaternion<T> const& q, Vector<T, 3> const& v) {
-    Vector<T, 3> const lqv(q.x, q.y, q.z);
-    Vector<T, 3> const uv(cross(lqv, v));
-    Vector<T, 3> const uuv(cross(lqv, uv));
+vec<T, 3> operator*(quaternion<T> const& q, vec<T, 3> const& v) {
+    vec<T, 3> const lqv{ q.x, q.y, q.z };
+    vec<T, 3> const uv(cross(lqv, v));
+    vec<T, 3> const uuv(cross(lqv, uv));
 
     return v + ((uv * q.w) + uuv) * static_cast<T>(2);
 }
@@ -78,22 +79,22 @@ Vector<T, 3> operator*(Quaternion<T> const& q, Vector<T, 3> const& v) {
 
 // Operations ==================================================================
 template <class T>
-T length(Quaternion<T> const& q) {
-    return length(Vector<T, 4>(q));
+T length(quaternion<T> const& q) {
+    return length(vec<T, 4>(q));
 }
 
 template <class T>
-Quaternion<T> normalize(Quaternion<T> const& q) {
-    return Quaternion<T>(normalize(q.storage));
+quaternion<T> normalize(quaternion<T> const& q) {
+    return quaternion<T>(normalize(q.storage));
 }
 
 template <class T>
-Quaternion<T> conjugate(Quaternion<T> const& q) {
-    return Quaternion<T>(q.w, -Vector<T, 3>(q.storage));
+quaternion<T> conjugate(quaternion<T> const& q) {
+    return quaternion<T>(q.w, -vec<T, 3>(q.storage));
 }
 
 template <class T>
-Quaternion<T> inverse(Quaternion<T> const& q) {
+quaternion<T> inverse(quaternion<T> const& q) {
     return conjugate(q) / dot(q.storage, q.storage);
 }
 
@@ -102,7 +103,7 @@ Quaternion<T> inverse(Quaternion<T> const& q) {
 
 /// \brief Convert a UNIT quaternion to a mat3
 template <class T>
-Matrix<T, 3, 3> mat3_from_unit_quaternion(Quaternion<T> const& q) {
+mat<T, 3, 3> mat3_from_unit_quaternion(quaternion<T> const& q) {
     T const qxx(q.x * q.x);
     T const qyy(q.y * q.y);
     T const qzz(q.z * q.z);
@@ -116,7 +117,7 @@ Matrix<T, 3, 3> mat3_from_unit_quaternion(Quaternion<T> const& q) {
     T const one(1);
     T const two(2);
 
-    Matrix<T, 3, 3> ret;
+    mat<T, 3, 3> ret;
     ret[0][0] = one - two * (qyy + qzz);
     ret[0][1] = two * (qxy + qwz);
     ret[0][2] = two * (qxz - qwy);
@@ -134,7 +135,7 @@ Matrix<T, 3, 3> mat3_from_unit_quaternion(Quaternion<T> const& q) {
 
 /// \brief Convert a UNIT quaternion to a mat3
 template <class T>
-Matrix<T, 4, 4> mat4_from_unit_quaternion(Quaternion<T> const& q) {
+mat<T, 4, 4> mat4_from_unit_quaternion(quaternion<T> const& q) {
 
     T const qxx(q.x * q.x);
     T const qyy(q.y * q.y);
@@ -149,7 +150,7 @@ Matrix<T, 4, 4> mat4_from_unit_quaternion(Quaternion<T> const& q) {
     T const one(1);
     T const two(2);
 
-    Matrix<T, 4, 4> ret(0);
+    mat<T, 4, 4> ret(0);
     ret[0][0] = one - two * (qyy + qzz);
     ret[0][1] = two * (qxy + qwz);
     ret[0][2] = two * (qxz - qwy);
@@ -167,8 +168,8 @@ Matrix<T, 4, 4> mat4_from_unit_quaternion(Quaternion<T> const& q) {
 }
 
 template <class T>
-Quaternion<T> quaternion_from_matrix(Matrix<T, 3, 3> const& m) {
-    Quaternion<T> q;
+quaternion<T> quaternion_from_matrix(mat<T, 3, 3> const& m) {
+    quaternion<T> q;
 
     float const trace = m[0][0] + m[1][1] + m[2][2];
     // printf("TRACE %f : %f %f %f\n", trace, m[0][0], m[1][1], m[2][2]);
@@ -209,8 +210,8 @@ Quaternion<T> quaternion_from_matrix(Matrix<T, 3, 3> const& m) {
 }
 
 template <class T>
-Quaternion<T> quaternion_from_matrix(Matrix<T, 4, 4> const& m) {
-    return quaternion_from_matrix(Matrix<T, 3, 3>(m));
+quaternion<T> quaternion_from_matrix(mat<T, 4, 4> const& m) {
+    return quaternion_from_matrix(mat<T, 3, 3>(m));
 }
 
 // Other =======================================================================
@@ -221,14 +222,13 @@ Quaternion<T> quaternion_from_matrix(Matrix<T, 4, 4> const& m) {
 /// \param to A normalized destination vector
 ///
 template <class T>
-Quaternion<T> rotation_from_to(Vector<T, 3> const& from,
-                               Vector<T, 3> const& to) {
-    Vector<T, 3> const w = cross(from, to);
+quaternion<T> rotation_from_to(vec<T, 3> const& from, vec<T, 3> const& to) {
+    vec<T, 3> const w = cross(from, to);
 
-    Vector<T, 4> lq(w.x, w.y, w.z, dot(from, to));
+    vec<T, 4> lq{ w.x, w.y, w.z, dot(from, to) };
 
     lq.w += dot(lq, lq);
-    return normalize(Quaternion<T>(lq));
+    return normalize(quaternion<T>(lq));
 }
 
 
@@ -238,29 +238,29 @@ Quaternion<T> rotation_from_to(Vector<T, 3> const& from,
 /// \param norm_up The 'up' direction, must be normalized
 ///
 template <class T>
-Quaternion<T> look_at_lh(Vector<T, 3> const& norm_direction,
-                         Vector<T, 3> const& norm_up) {
+quaternion<T> look_at_lh(vec<T, 3> const& norm_direction,
+                         vec<T, 3> const& norm_up) {
     if (std::abs(dot(norm_direction, norm_up)) >= 1) {
-        return rotation_from_to({ 0, 0, -1 }, norm_direction);
+        return rotation_from_to(vec<T, 3>{ 0, 0, -1 }, norm_direction);
     }
 
-    Matrix<T, 3, 3> ret;
+    mat<T, 3, 3> ret;
     ret[0] = normalize(cross(norm_up, norm_direction));
     ret[1] = cross(norm_direction, ret[0]);
     ret[2] = norm_direction;
 
-    return Quaternion<T>(quaternion_from_matrix(ret));
+    return quaternion<T>(quaternion_from_matrix(ret));
 }
 
 ///
 /// \brief Compute a quaternion from Euler angles, expressed in radians
 ///
 template <class T>
-Quaternion<T> from_angles(Vector<T, 3> angles) {
-    Vector<T, 3> const c = cos(angles * T(0.5));
-    Vector<T, 3> const s = sin(angles * T(0.5));
+quaternion<T> from_angles(vec<T, 3> angles) {
+    vec<T, 3> const c = cos(angles * T(0.5));
+    vec<T, 3> const s = sin(angles * T(0.5));
 
-    Quaternion<T> ret;
+    quaternion<T> ret;
     ret.x = s.x * c.y * c.z - c.x * s.y * s.z;
     ret.y = c.x * s.y * c.z + s.x * c.y * s.z;
     ret.z = c.x * c.y * s.z - s.x * s.y * c.z;
@@ -273,10 +273,10 @@ Quaternion<T> from_angles(Vector<T, 3> angles) {
 /// radians
 ///
 template <class T>
-Quaternion<T> from_angle_axis(T angle, Vector<T, 3> axis) {
+quaternion<T> from_angle_axis(T angle, vec<T, 3> axis) {
     T const s = std::sin(angle * static_cast<T>(0.5));
 
-    return Quaternion<T>(std::cos(angle * static_cast<T>(0.5)), axis * s);
+    return quaternion<T>(std::cos(angle * static_cast<T>(0.5)), axis * s);
 }
 
 

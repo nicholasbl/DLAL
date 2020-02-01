@@ -2,7 +2,7 @@
 #define LINALG_MATRIX_H
 
 #include "mat_detail.h"
-#include "vec.h"
+#include "packed_vec.h"
 
 #include <xmmintrin.h>
 
@@ -10,12 +10,32 @@ namespace dct {
 
 ///
 /// \brief The MatrixStorage class defines the column-major storage of the
-/// matrix
+/// matrix. No size guarantees are made.
 ///
 template <class T, size_t C, size_t R>
 struct MatrixStorage {
-    using ColumnType = Vector<T, R>;
-    using RowType    = Vector<T, C>;
+    using ColumnType = vec<T, R>;
+    using RowType    = vec<T, C>;
+
+    using StorageType = std::array<ColumnType, C>;
+
+    StorageType storage;
+
+    static constexpr bool is_contiguous =
+        sizeof(storage) == (sizeof(T) * C * R);
+
+    constexpr MatrixStorage() : storage() {}
+    constexpr MatrixStorage(MatrixStorage const& o) : storage(o.storage) {}
+};
+
+///
+/// \brief The PackedMatrixStorage class defines the column-major storage of the
+/// matrix. Contents are packed to be sizeof(T) * C * R.
+///
+template <class T, size_t C, size_t R>
+struct PackedMatrixStorage {
+    using ColumnType = PackedVector<T, R>;
+    using RowType    = PackedVector<T, C>;
 
     using StorageType = std::array<ColumnType, C>;
 
@@ -23,33 +43,16 @@ struct MatrixStorage {
 
     static_assert(sizeof(StorageType) == sizeof(T) * C * R);
 
-    constexpr MatrixStorage() : storage() {}
-    constexpr MatrixStorage(MatrixStorage const& o) : storage(o.storage) {}
+    constexpr PackedMatrixStorage() : storage() {}
+    constexpr PackedMatrixStorage(PackedMatrixStorage const& o)
+        : storage(o.storage) {}
 };
 
-///
-/// \brief This specialization attemps to force alignment to aid vector
-/// instructions
-///
-template <>
-struct alignas(16) MatrixStorage<float, 4, 4> {
-    using ColumnType = Vector<float, 4>;
-    using RowType    = Vector<float, 4>;
+template <class T, size_t C, size_t R>
+struct mat;
 
-    using StorageType = std::array<ColumnType, 4>;
-
-    static_assert(sizeof(__m128) == sizeof(vector_detail::vec4));
-
-    union {
-        StorageType         storage;
-        vector_detail::vec4 as_vec[4];
-    };
-
-    static_assert(sizeof(StorageType) == sizeof(float) * 4 * 4);
-
-    MatrixStorage() : storage() {}
-    constexpr MatrixStorage(MatrixStorage const& o) : storage(o.storage) {}
-};
+template <class T, size_t C, size_t R>
+struct packed_mat;
 
 ///
 /// \brief The root Matrix template
@@ -59,14 +62,12 @@ struct alignas(16) MatrixStorage<float, 4, 4> {
 /// \tparam R The number of rows
 ///
 template <class T, size_t C, size_t R>
-struct Matrix : public MatrixStorage<T, C, R> {
+struct mat : public MatrixStorage<T, C, R> {
 
     using Parent = MatrixStorage<T, C, R>;
 
     using StorageType = typename MatrixStorage<T, C, R>::StorageType;
     using ColumnType  = typename MatrixStorage<T, C, R>::ColumnType;
-
-    static_assert(sizeof(StorageType) == sizeof(T) * C * R);
 
 public: // Basics
     constexpr size_t size() { return C * R; }
@@ -81,23 +82,33 @@ public: // Basics
 
 public:
     /// \brief Initialize all cells to zero
-    constexpr Matrix() : Parent({}) {}
+    constexpr mat() : Parent({}) {}
 
-    constexpr Matrix(Matrix const&) = default;
+    constexpr mat(mat const&) = default;
 
-    constexpr Matrix(std::array<float, C * R> const& a) {
-        std::copy(a.data(), a.data() + a.size(), data());
+    constexpr mat(std::array<float, C * R> const& a) {
+        if constexpr (Parent::is_contiguous) {
+            std::copy(a.data(),
+                      a.data() + a.size(),
+                      reinterpret_cast<T*>(&Parent::storage[0]));
+        } else {
+            for (size_t i = 0; i < C; ++i) {
+                for (size_t j = 0; j < R; ++j) {
+                    (*this)[i][j] = a[i * R + j];
+                }
+            }
+        }
     }
 
     /// \brief Initialize all cells to the given value
-    constexpr Matrix(T value) { Parent::storage.fill(value); }
+    constexpr mat(T value) { Parent::storage.fill(value); }
 
-    constexpr Matrix(StorageType pack) : Parent::storage(pack) {}
+    constexpr mat(StorageType pack) : Parent::storage(pack) {}
 
     /// \brief Initialize values from a differently sized matrix, zeros
     /// otherwise.
     template <size_t C2, size_t R2>
-    constexpr explicit Matrix(Matrix<T, C2, R2> const& other) {
+    constexpr explicit mat(mat<T, C2, R2> const& other) {
         using namespace matrix_detail;
         constexpr size_t bound = C2 < C ? C2 : C;
         // no loops for speed in debug mode
@@ -122,7 +133,7 @@ public:
 public:
     /// \brief Copy values from a differently sized matrix.
     template <size_t C2, size_t R2>
-    void assign(Matrix<T, C2, R2> const& other) {
+    void assign(mat<T, C2, R2> const& other) {
         using namespace matrix_detail;
         constexpr size_t bound = C2 < C ? C2 : C;
         // no loops for speed in debug mode
@@ -146,9 +157,9 @@ public:
 
 public:
     /// \brief Obtain an identity matrix
-    static Matrix const& identity() {
-        static const Matrix ret = []() {
-            Matrix l;
+    static mat const& identity() {
+        static const mat ret = []() {
+            mat l;
 
             for (size_t c = 0; c < C; c++) {
                 for (size_t r = 0; r < R; r++) {
@@ -161,32 +172,38 @@ public:
 
         return ret;
     }
-
-public:
-    // storage is contiguous, and size is equivalent to a single array
-    T*       data() { return reinterpret_cast<T*>(this); }
-    T const* data() const { return reinterpret_cast<T const*>(this); }
-
-    constexpr auto begin() { return data(); }
-    constexpr auto begin() const { return data(); }
-    constexpr auto end() { return data() + size(); }
-    constexpr auto end() const { return data() + size(); }
 };
 
 // Typedefs ====================================================================
 
-using Mat2 = Matrix<float, 2, 2>;
-using Mat3 = Matrix<float, 3, 3>;
-using Mat4 = Matrix<float, 4, 4>;
+using mat2 = mat<float, 2, 2>;
+using mat3 = mat<float, 3, 3>;
+using mat4 = mat<float, 4, 4>;
+
+// Accessors ===================================================================
+
+template <class T, size_t C, size_t R>
+T* data(mat<T, C, R>& m) {
+    static_assert(mat<T, C, R>::is_contiguous,
+                  "Matrix must have contiguous storage.");
+    return reinterpret_cast<T*>(&m.storage[0]);
+}
+
+template <class T, size_t C, size_t R>
+T const* data(mat<T, C, R> const& m) {
+    static_assert(mat<T, C, R>::is_contiguous,
+                  "Matrix must have contiguous storage.");
+    return reinterpret_cast<T const*>(&m.storage[0]);
+}
 
 // Unary =======================================================================
 template <class T, size_t C, size_t R>
-Matrix<T, C, R> operator-(Matrix<T, C, R> const& m) {
+mat<T, C, R> operator-(mat<T, C, R> const& m) {
     MATRIX_UNARY(-)
 }
 
 template <class T, size_t C, size_t R>
-Matrix<T, C, R> operator!(Matrix<T, C, R> const& m) {
+mat<T, C, R> operator!(mat<T, C, R> const& m) {
     MATRIX_UNARY(!)
 }
 
@@ -194,58 +211,58 @@ Matrix<T, C, R> operator!(Matrix<T, C, R> const& m) {
 
 // Addition ====================================================================
 template <class T, size_t C, size_t R>
-auto operator+(Matrix<T, C, R> const& m, Matrix<T, C, R> const& o) {
+auto operator+(mat<T, C, R> const& m, mat<T, C, R> const& o) {
     MATRIX_BINARY(+)
 }
 template <class T, size_t C, size_t R>
-auto operator+(Matrix<T, C, R> const& m, T scalar) {
+auto operator+(mat<T, C, R> const& m, T scalar) {
     MATRIX_BINARY_SCALAR_R(+)
 }
 template <class T, size_t C, size_t R>
-auto operator+(T scalar, Matrix<T, C, R> const& m) {
+auto operator+(T scalar, mat<T, C, R> const& m) {
     MATRIX_BINARY_SCALAR_L(+)
 }
 
 template <class T, size_t C, size_t R>
-Matrix<T, C, R>& operator+=(Matrix<T, C, R>& m, Matrix<T, C, R> const& o) {
+mat<T, C, R>& operator+=(mat<T, C, R>& m, mat<T, C, R> const& o) {
     MATRIX_IN_PLACE(+=)
 }
 template <class T, size_t C, size_t R>
-Matrix<T, C, R>& operator+=(Matrix<T, C, R>& m, T scalar) {
+mat<T, C, R>& operator+=(mat<T, C, R>& m, T scalar) {
     MATRIX_IN_PLACE_SCALAR_R(+=)
 }
 
 // Subtraction =================================================================
 
 template <class T, size_t C, size_t R>
-auto operator-(Matrix<T, C, R> const& m, Matrix<T, C, R> const& o) {
+auto operator-(mat<T, C, R> const& m, mat<T, C, R> const& o) {
     MATRIX_BINARY(-)
 }
 template <class T, size_t C, size_t R>
-auto operator-(Matrix<T, C, R> const& m, T scalar) {
+auto operator-(mat<T, C, R> const& m, T scalar) {
     MATRIX_BINARY_SCALAR_R(-)
 }
 template <class T, size_t C, size_t R>
-auto operator-(T scalar, Matrix<T, C, R> const& m) {
+auto operator-(T scalar, mat<T, C, R> const& m) {
     MATRIX_BINARY_SCALAR_L(-)
 }
 
 template <class T, size_t C, size_t R>
-Matrix<T, C, R>& operator-=(Matrix<T, C, R>& m, Matrix<T, C, R> const& o) {
+mat<T, C, R>& operator-=(mat<T, C, R>& m, mat<T, C, R> const& o) {
     MATRIX_IN_PLACE(-=)
 }
 template <class T, size_t C, size_t R>
-Matrix<T, C, R>& operator-=(Matrix<T, C, R>& m, T scalar) {
+mat<T, C, R>& operator-=(mat<T, C, R>& m, T scalar) {
     MATRIX_IN_PLACE_SCALAR_R(-=)
 }
 
 // Multiply ====================================================================
 
 template <class T, size_t N, size_t R, size_t C>
-auto operator*(Matrix<T, N, R> const& m, Matrix<T, C, N> const& o) {
-    static_assert(std::is_same_v<typename Matrix<T, N, R>::RowType,
-                                 typename Matrix<T, C, N>::ColumnType>);
-    Matrix<T, C, R> ret(0);
+auto operator*(mat<T, N, R> const& m, mat<T, C, N> const& o) {
+    static_assert(std::is_same_v<typename mat<T, N, R>::RowType,
+                                 typename mat<T, C, N>::ColumnType>);
+    mat<T, C, R> ret(0);
 
     for (size_t i = 0; i < C; ++i) {
         for (size_t j = 0; j < R; ++j) {
@@ -259,11 +276,11 @@ auto operator*(Matrix<T, N, R> const& m, Matrix<T, C, N> const& o) {
 }
 
 template <class T, size_t C, size_t R>
-auto operator*(Matrix<T, C, R> const& m, Vector<T, R> const& o) {
-    Vector<T, R> ret(0);
+auto operator*(mat<T, C, R> const& m, vec<T, R> const& o) {
+    vec<T, R> ret(0);
 
     for (size_t i = 0; i < C; ++i) {
-        ret += m[i] * Vector<T, R>(o[i]);
+        ret += m[i] * vec<T, R>(o[i]);
     }
 
     return ret;
@@ -271,7 +288,7 @@ auto operator*(Matrix<T, C, R> const& m, Vector<T, R> const& o) {
 
 
 // loop free versions for the most common cases
-inline auto operator*(Mat3 const& m, Mat3 const& o) {
+inline auto operator*(mat3 const& m, mat3 const& o) {
     auto const m0 = m[0];
     auto const m1 = m[1];
     auto const m2 = m[2];
@@ -280,14 +297,14 @@ inline auto operator*(Mat3 const& m, Mat3 const& o) {
     auto const o1 = o[1];
     auto const o2 = o[2];
 
-    Mat3 ret;
+    mat3 ret;
     ret[0] = m0 * o0[0] + m1 * o0[1] + m2 * o0[2];
     ret[1] = m0 * o1[0] + m1 * o1[1] + m2 * o1[2];
     ret[2] = m0 * o2[0] + m1 * o2[1] + m2 * o2[2];
     return ret;
 }
 
-inline auto operator*(Mat4 const& m, Mat4 const& o) {
+inline auto operator*(mat4 const& m, mat4 const& o) {
     auto const m0 = m[0];
     auto const m1 = m[1];
     auto const m2 = m[2];
@@ -298,7 +315,7 @@ inline auto operator*(Mat4 const& m, Mat4 const& o) {
     auto const o2 = o[2];
     auto const o3 = o[3];
 
-    Mat4 ret;
+    mat4 ret;
     ret[0] = m0 * o0[0] + m1 * o0[1] + m2 * o0[2] + m3 * o0[3];
     ret[1] = m0 * o1[0] + m1 * o1[1] + m2 * o1[2] + m3 * o1[3];
     ret[2] = m0 * o2[0] + m1 * o2[1] + m2 * o2[2] + m3 * o2[3];
@@ -307,26 +324,26 @@ inline auto operator*(Mat4 const& m, Mat4 const& o) {
 }
 
 template <class T>
-auto operator*(Matrix<T, 3, 3> const& m, Vector<T, 3> const& o) {
-    Vector<T, 3> a0 = m[0] * Vector<T, 3>(o[0]);
-    Vector<T, 3> a1 = m[1] * Vector<T, 3>(o[1]);
+auto operator*(mat<T, 3, 3> const& m, vec<T, 3> const& o) {
+    vec<T, 3> a0 = m[0] * vec<T, 3>(o[0]);
+    vec<T, 3> a1 = m[1] * vec<T, 3>(o[1]);
 
     auto m1 = a0 + a1;
 
-    Vector<T, 3> a2 = m[2] * Vector<T, 3>(o[2]);
+    vec<T, 3> a2 = m[2] * vec<T, 3>(o[2]);
 
     return m1 + a2;
 }
 
 template <class T>
-auto operator*(Matrix<T, 4, 4> const& m, Vector<T, 4> const& o) {
-    Vector<T, 4> a0 = m[0] * Vector<T, 4>(o[0]);
-    Vector<T, 4> a1 = m[1] * Vector<T, 4>(o[1]);
+auto operator*(mat<T, 4, 4> const& m, vec<T, 4> const& o) {
+    vec<T, 4> a0 = m[0] * vec<T, 4>(o[0]);
+    vec<T, 4> a1 = m[1] * vec<T, 4>(o[1]);
 
     auto m1 = a0 + a1;
 
-    Vector<T, 4> a2 = m[2] * Vector<T, 4>(o[2]);
-    Vector<T, 4> a3 = m[3] * Vector<T, 4>(o[3]);
+    vec<T, 4> a2 = m[2] * vec<T, 4>(o[2]);
+    vec<T, 4> a3 = m[3] * vec<T, 4>(o[3]);
 
     auto m2 = a2 + a3;
 
@@ -335,60 +352,60 @@ auto operator*(Matrix<T, 4, 4> const& m, Vector<T, 4> const& o) {
 
 
 template <class T, size_t C, size_t R>
-auto operator*(Matrix<T, C, R> const& m, T scalar) {
+auto operator*(mat<T, C, R> const& m, T scalar) {
     MATRIX_BINARY_SCALAR_R(*)
 }
 
 template <class T, size_t C, size_t R>
-auto operator*(T scalar, Matrix<T, C, R> const& m) {
+auto operator*(T scalar, mat<T, C, R> const& m) {
     MATRIX_BINARY_SCALAR_L(*)
 }
 
 
 template <class T, size_t N, size_t R, size_t C>
-Matrix<T, N, R> operator*=(Matrix<T, N, R>& m, Matrix<T, C, N> const& o) {
+mat<T, N, R> operator*=(mat<T, N, R>& m, mat<T, C, N> const& o) {
     return m = m * o;
 }
 template <class T, size_t C, size_t R>
-Matrix<T, C, R>& operator*=(Matrix<T, C, R>& m, T scalar) {
+mat<T, C, R>& operator*=(mat<T, C, R>& m, T scalar) {
     return m = m * scalar;
 }
 template <class T, size_t C, size_t R>
-Matrix<T, C, R>& operator*=(T scalar, Matrix<T, C, R>& m) {
+mat<T, C, R>& operator*=(T scalar, mat<T, C, R>& m) {
     return m = scalar * m;
 }
 
 // Division ====================================================================
 
 template <class T, size_t C, size_t R>
-auto operator/(Matrix<T, C, R> const& m, T scalar) {
+auto operator/(mat<T, C, R> const& m, T scalar) {
     MATRIX_BINARY_SCALAR_R(/)
 }
 
 template <class T, size_t C, size_t R>
-auto operator/(T scalar, Matrix<T, C, R> const& m) {
+auto operator/(T scalar, mat<T, C, R> const& m) {
     MATRIX_BINARY_SCALAR_L(/)
 }
 
 // Boolean =====================================================================
 
 template <class T, size_t C, size_t R>
-auto operator==(Matrix<T, C, R> const& m, Matrix<T, C, R> const& o) {
+auto operator==(mat<T, C, R> const& m, mat<T, C, R> const& o) {
     MATRIX_BINARY_BOOL(==)
 }
 
 template <class T, size_t C, size_t R>
-auto operator!=(Matrix<T, C, R> const& m, Matrix<T, C, R> const& o) {
+auto operator!=(mat<T, C, R> const& m, mat<T, C, R> const& o) {
     MATRIX_BINARY_BOOL(!=)
 }
 
 template <class T, size_t C, size_t R>
-auto operator&&(Matrix<bool, C, R> const& m, Matrix<bool, C, R> const& o) {
+auto operator&&(mat<bool, C, R> const& m, mat<bool, C, R> const& o) {
     MATRIX_BINARY_BOOL(&&)
 }
 
 template <class T, size_t C, size_t R>
-auto operator||(Matrix<bool, C, R> const& m, Matrix<bool, C, R> const& o) {
+auto operator||(mat<bool, C, R> const& m, mat<bool, C, R> const& o) {
     MATRIX_BINARY_BOOL(||)
 }
 
@@ -403,7 +420,7 @@ auto operator||(Matrix<bool, C, R> const& m, Matrix<bool, C, R> const& o) {
 
 // Other =======================================================================
 template <size_t C, size_t R>
-bool is_all(Matrix<bool, C, R> const& a) {
+bool is_all(mat<int, C, R> const& a) {
     if constexpr (C == 1) {
         return is_all(a[0]);
     } else if constexpr (C == 2) {
@@ -416,7 +433,7 @@ bool is_all(Matrix<bool, C, R> const& a) {
 }
 
 template <size_t C, size_t R>
-bool is_any(Matrix<bool, C, R> const& a) {
+bool is_any(mat<int, C, R> const& a) {
     if constexpr (C == 1) {
         return is_any(a[0]);
     } else if constexpr (C == 2) {
@@ -429,16 +446,16 @@ bool is_any(Matrix<bool, C, R> const& a) {
 }
 
 template <class T, size_t C, size_t R>
-bool is_equal(Matrix<T, C, R> const& a, Matrix<T, C, R> const& b) {
+bool is_equal(mat<T, C, R> const& a, mat<T, C, R> const& b) {
     return is_all(a == b);
 }
 
 template <class T, size_t C, size_t R>
-bool is_equal(Matrix<T, C, R> const& a, Matrix<T, C, R> const& b, T limit) {
+bool is_equal(mat<T, C, R> const& a, mat<T, C, R> const& b, T limit) {
     static_assert(std::is_floating_point_v<T>);
 
-    auto            delta = abs(a - b);
-    Matrix<T, C, R> c(limit);
+    auto         delta = abs(a - b);
+    mat<T, C, R> c(limit);
 
     return is_all(delta < c);
 }

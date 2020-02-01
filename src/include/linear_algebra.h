@@ -5,6 +5,6 @@
 #include "mat_operations.h"
 #include "mat_transforms.h"
 #include "quat.h"
-#include "vec.h"
+#include "packed_vec.h"
 
 #endif // LINEAR_ALGEBRA_H

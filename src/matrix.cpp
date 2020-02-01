@@ -12,10 +12,10 @@ template <class T, size_t C, size_t R, class Function>
 bool binary_test(std::array<T, C * R> const& a,
                  std::array<T, C * R> const& b,
                  Function                    f) {
-    Matrix<T, C, R> our_side;
+    mat<T, C, R> our_side;
     {
-        auto ma = Matrix<T, C, R>(a);
-        auto mb = Matrix<T, C, R>(b);
+        auto ma = mat<T, C, R>(a);
+        auto mb = mat<T, C, R>(b);
 
         our_side = f(ma, mb);
     }
@@ -37,23 +37,12 @@ bool binary_test(std::array<T, C * R> const& a,
 }
 
 template <class T, size_t C, size_t R, size_t C2, size_t R2, class Function>
-bool binary_test_2(Matrix<T, C, R> const&   a,
-                   Matrix<T, C2, R2> const& b,
-                   Function                 f) {
+bool binary_test_2(mat<T, C, R> const& a, mat<T, C2, R2> const& b, Function f) {
 
     auto our_side = f(a, b);
 
-    glm::mat<C, R, T>   ga;
-    glm::mat<C2, R2, T> gb;
-
-    for (size_t i = 0; i < C * R; ++i) {
-        glm::value_ptr(ga)[i] = a.data()[i];
-    }
-
-    for (size_t i = 0; i < C2 * R2; ++i) {
-        glm::value_ptr(gb)[i] = b.data()[i];
-    }
-
+    glm::mat<C, R, T>   ga = to_glm(a);
+    glm::mat<C2, R2, T> gb = to_glm(b);
 
     auto their_side = f(ga, gb);
 
@@ -75,23 +64,12 @@ bool binary_test_2(Matrix<T, C, R> const&   a,
 }
 
 template <class T, size_t C, size_t R, class Function>
-bool binary_vector_2(Matrix<T, C, R> const& a,
-                     Vector<T, R> const&    b,
-                     Function               f) {
+bool binary_vector_2(mat<T, C, R> const& a, vec<T, R> const& b, Function f) {
 
     auto our_side = f(a, b);
 
-    glm::mat<C, R, T> ga;
-    glm::vec<R, T>    gb;
-
-    for (size_t i = 0; i < C * R; ++i) {
-        glm::value_ptr(ga)[i] = a.data()[i];
-    }
-
-    for (size_t i = 0; i < R; ++i) {
-        glm::value_ptr(gb)[i] = b.data()[i];
-    }
-
+    glm::mat<C, R, T> ga = to_glm(a);
+    glm::vec<R, T>    gb = to_glm(b);
 
     auto their_side = f(ga, gb);
 
@@ -114,9 +92,9 @@ bool binary_vector_2(Matrix<T, C, R> const& a,
 
 template <class T, size_t C, size_t R, class Function>
 bool binary_scalar_test(std::array<T, C * R> const& a, T value, Function f) {
-    Matrix<T, C, R> our_side;
+    mat<T, C, R> our_side;
     {
-        auto ma = Matrix<T, C, R>(a);
+        auto ma = mat<T, C, R>(a);
 
         our_side = f(ma, value);
     }
@@ -146,28 +124,29 @@ std::array<T, N> make_filled(T value) {
 TEST_CASE("Matrix Library") {
 
     SUBCASE("Constructors / Assignment") {
-        Mat4 m1(10);
+        mat4 m1(10);
 
         REQUIRE(is_same(m1, make_filled<float, 16>(10.0f)));
 
-        Mat4 m1a(Mat3({ 1, 2, 3, 4, 5, 6, 7, 8, 9 }));
+        mat4 m1a(mat3({ 1, 2, 3, 4, 5, 6, 7, 8, 9 }));
+
         REQUIRE(is_same(
-            m1a, Mat4({ 1, 2, 3, 0, 4, 5, 6, 0, 7, 8, 9, 0, 0, 0, 0, 0 })));
+            m1a, mat4({ 1, 2, 3, 0, 4, 5, 6, 0, 7, 8, 9, 0, 0, 0, 0, 0 })));
 
 
         std::array<float, 16> src = {
             { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 }
         };
 
-        Mat4 m2(src);
-        Mat4 m2a(m2);
+        mat4 m2(src);
+        mat4 m2a(m2);
 
         REQUIRE(is_same(m2, src));
         REQUIRE(is_same(m2, m2a));
 
         std::array<float, 9> small_src = { { 1, 2, 3, 5, 6, 7, 9, 10, 11 } };
 
-        Mat3 m3(m2);
+        mat3 m3(m2);
 
         REQUIRE(is_same(m3, small_src));
     }
@@ -194,7 +173,7 @@ TEST_CASE("Matrix Library") {
                                          -15,
                                          -16 } };
 
-        REQUIRE(is_same(-Mat4(src), nsrc));
+        REQUIRE(is_same(-mat4(src), nsrc));
     }
 
     SUBCASE("Binary") {
@@ -254,8 +233,8 @@ TEST_CASE("Matrix Library") {
             };
 
             REQUIRE(binary_test_2<float>(
-                Matrix<float, 3, 4>(a_src),
-                Matrix<float, 4, 3>(b_src),
+                mat<float, 3, 4>(a_src),
+                mat<float, 4, 3>(b_src),
                 [](auto const& a, auto const& b) { return a * b; }));
         }
 
@@ -265,7 +244,7 @@ TEST_CASE("Matrix Library") {
             std::array<float, 9> b_src = { { 9, 2, 5, 7, 8, 1, 9, 1, 2 } };
 
             REQUIRE(binary_test_2<float>(
-                Mat3(a_src), Mat3(b_src), [](auto const& a, auto const& b) {
+                mat3(a_src), mat3(b_src), [](auto const& a, auto const& b) {
                     return a * b;
                 }));
         }
@@ -278,9 +257,9 @@ TEST_CASE("Matrix Library") {
             std::array<float, 4> b_src = { { 8, 1, 9, 1 } };
 
             REQUIRE(binary_vector_2<float>(
-                Mat4(a_src), Vec4(b_src), [](auto const& a, auto const& b) {
-                    return a * b;
-                }));
+                mat4(a_src),
+                dct::vec_from_array(b_src),
+                [](auto const& a, auto const& b) { return a * b; }));
         }
 
         {
@@ -289,9 +268,9 @@ TEST_CASE("Matrix Library") {
             std::array<float, 3> b_src = { { 8, 1, 9 } };
 
             REQUIRE(binary_vector_2<float>(
-                Mat3(a_src), Vec3(b_src), [](auto const& a, auto const& b) {
-                    return a * b;
-                }));
+                mat3(a_src),
+                dct::vec_from_array(b_src),
+                [](auto const& a, auto const& b) { return a * b; }));
         }
     }
 }

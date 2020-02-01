@@ -29,10 +29,9 @@ HEADERS += \
     include/mat_detail.h \
     include/mat_operations.h \
     include/mat_transforms.h \
+    include/packed_vec.h \
     include/quat.h \
     include/tmatrix.h \
     include/vec.h \
-    include/vec_detail.h \
     include/vec_trig.h \
-    test_common.h \
-    test_single_header.h
+    test_common.h
