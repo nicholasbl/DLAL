@@ -7,19 +7,37 @@
 
 namespace dct {
 
+static_assert(__has_attribute(ext_vector_type));
+
+template <class T, int N>
+using vec __attribute__((ext_vector_type(N))) = T;
+
+using vec1 = vec<float, 1>;
+using vec2 = vec<float, 2>;
+using vec3 = vec<float, 3>;
+using vec4 = vec<float, 4>;
+
+using dvec1 = vec<double, 1>;
+using dvec2 = vec<double, 2>;
+using dvec3 = vec<double, 3>;
+using dvec4 = vec<double, 4>;
+
+using ivec1 = vec<int, 1>;
+using ivec2 = vec<int, 2>;
+using ivec3 = vec<int, 3>;
+using ivec4 = vec<int, 4>;
+
+using i64vec1 = vec<int64_t, 1>;
+using i64vec2 = vec<int64_t, 2>;
+using i64vec3 = vec<int64_t, 3>;
+using i64vec4 = vec<int64_t, 4>;
+
 namespace vector_detail {
 
-template <class T, unsigned N>
-using vec __attribute__((vector_size(sizeof(T) * N))) = T;
-
-using ivec4 = vec<int, 4>;
-using vec4  = vec<float, 4>;
-
-// vec4 should be equivalent to __m128
 
 #ifdef __clang__
 #define SWIZZLE(A, X, Y, Z, W)                                                 \
-    __builtin_shufflevector(A, dct::vector_detail::ivec4{ X, Y, Z, W })
+    __builtin_shufflevector(A, dct::ivec4{ X, Y, Z, W })
 #define SHUFFLE(A, B, X, Y, Z, W) __builtin_shufflevector(A, B, X, Y, Z, W)
 #else
 #define SWIZZLE(A, X, Y, Z, W)                                                 \

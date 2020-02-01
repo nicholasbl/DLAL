@@ -3,6 +3,8 @@
 
 #include "mat.h"
 
+#include <cmath>
+
 namespace dct {
 
 template <class T>
@@ -26,8 +28,8 @@ template <class T>
 Matrix<T, 4, 4>
 rotate(Matrix<T, 4, 4> const& m, T angle, Vector<T, 3> const& axis) {
     T const a = angle;
-    T const c = cos(a);
-    T const s = sin(a);
+    T const c = std::cos(a);
+    T const s = std::sin(a);
 
     Vector<T, 3> const naxis(normalize(axis));
     Vector<T, 3> const cos_pack((T(1) - c) * naxis);

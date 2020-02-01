@@ -6,6 +6,8 @@
 #include "mat_transforms.h"
 #include "quat.h"
 
+#include <cassert>
+
 namespace dct {
 
 

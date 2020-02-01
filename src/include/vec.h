@@ -229,8 +229,8 @@ struct alignas(16) Vector<float, 4> {
     using StorageType = std::array<float, 4>;
 
     union {
-        StorageType         storage;
         vector_detail::vec4 as_simd;
+        StorageType         storage;
         struct {
             float x, y, z, w;
         };
@@ -247,32 +247,32 @@ public: // Basics
 public:
     /// \brief Initialize all elements to zero
     constexpr Vector() : storage() {}
-    constexpr Vector(Vector const&) = default;
+    constexpr Vector(Vector const& o) : as_simd(o.as_simd) {}
 
     /// \brief Initialize all elements to the provided value
-    constexpr Vector(float _xyzw) : Vector(_xyzw, _xyzw, _xyzw, _xyzw) {}
-    constexpr Vector(vector_detail::vec4 const& st) : as_simd(st) {}
-    constexpr Vector(StorageType st) : storage(st) {}
-    constexpr Vector(float _x, float _y, float _z, float _w)
-        : as_simd{ _x, _y, _z, _w } {}
+    Vector(float _xyzw) : as_simd(_mm_set1_ps(_xyzw)) {}
+    Vector(vector_detail::vec4 const& st) : as_simd(st) {}
+    Vector(StorageType st) : storage(st) {}
+    Vector(float _x, float _y, float _z, float _w)
+        : as_simd(_mm_set_ps(_w, _z, _y, _x)) {}
 
 public: // conversion
-    // upgrade
-    // with a 2d
-    constexpr explicit Vector(Vector<float, 2> const& o, float nz, float nw)
+        // upgrade
+        // with a 2d
+    explicit Vector(Vector<float, 2> const& o, float nz, float nw)
         : Vector(o.x, o.y, nz, nw) {}
 
-    constexpr explicit Vector(float nx, Vector<float, 2> const& o, float nw)
+    explicit Vector(float nx, Vector<float, 2> const& o, float nw)
         : Vector(nx, o.x, o.y, nw) {}
 
-    constexpr explicit Vector(float nx, float ny, Vector<float, 2> const& o)
+    explicit Vector(float nx, float ny, Vector<float, 2> const& o)
         : Vector(nx, ny, o.x, o.y) {}
 
     // with a 3d
-    constexpr explicit Vector(Vector<float, 3> const& o, float nw)
+    explicit Vector(Vector<float, 3> const& o, float nw)
         : Vector(o.x, o.y, o.z, nw) {}
 
-    constexpr explicit Vector(float nx, Vector<float, 3> const& o)
+    explicit Vector(float nx, Vector<float, 3> const& o)
         : Vector(nx, o.x, o.y, o.z) {}
 
 public:
@@ -290,37 +290,37 @@ public:
 
 // Vector Typedefs =============================================================
 
-using BVec1 = Vector<bool, 2>;
+using BVec1 = Vector<bool, 1>;
 using BVec2 = Vector<bool, 2>;
 using BVec3 = Vector<bool, 3>;
 using BVec4 = Vector<bool, 4>;
 
-using I8Vec1 = Vector<int8_t, 2>;
+using I8Vec1 = Vector<int8_t, 1>;
 using I8Vec2 = Vector<int8_t, 2>;
 using I8Vec3 = Vector<int8_t, 3>;
 using I8Vec4 = Vector<int8_t, 4>;
 
-using I16Vec1 = Vector<int16_t, 2>;
+using I16Vec1 = Vector<int16_t, 1>;
 using I16Vec2 = Vector<int16_t, 2>;
 using I16Vec3 = Vector<int16_t, 3>;
 using I16Vec4 = Vector<int16_t, 4>;
 
-using IVec1 = Vector<int32_t, 2>;
+using IVec1 = Vector<int32_t, 1>;
 using IVec2 = Vector<int32_t, 2>;
 using IVec3 = Vector<int32_t, 3>;
 using IVec4 = Vector<int32_t, 4>;
 
-using I64Vec1 = Vector<int64_t, 2>;
+using I64Vec1 = Vector<int64_t, 1>;
 using I64Vec2 = Vector<int64_t, 2>;
 using I64Vec3 = Vector<int64_t, 3>;
 using I64Vec4 = Vector<int64_t, 4>;
 
-using Vec1 = Vector<float, 2>;
+using Vec1 = Vector<float, 1>;
 using Vec2 = Vector<float, 2>;
 using Vec3 = Vector<float, 3>;
 using Vec4 = Vector<float, 4>;
 
-using DVec1 = Vector<double, 2>;
+using DVec1 = Vector<double, 1>;
 using DVec2 = Vector<double, 2>;
 using DVec3 = Vector<double, 3>;
 using DVec4 = Vector<double, 4>;
@@ -366,8 +366,10 @@ Vector<T, N>& operator+=(Vector<T, N>& v, T scalar) {
     VECTOR_IN_PLACE_SCALAR_R(+=)
 }
 
-inline Vec4 operator+(Vec4 const& v, Vec4 const& o) {
-    return v.as_simd + o.as_simd;
+inline Vec4 operator+(Vec4 const v, Vec4 const o) {
+    Vec4 ret;
+    ret.as_simd = _mm_add_ps(v.as_simd, o.as_simd);
+    return ret;
 }
 inline Vec4 operator+(Vec4 const& v, float scalar) {
     return v.as_simd + scalar;

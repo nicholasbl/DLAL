@@ -34,4 +34,5 @@ HEADERS += \
     include/vec.h \
     include/vec_detail.h \
     include/vec_trig.h \
-    test_common.h
+    test_common.h \
+    test_single_header.h

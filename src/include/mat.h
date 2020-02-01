@@ -24,6 +24,7 @@ struct MatrixStorage {
     static_assert(sizeof(StorageType) == sizeof(T) * C * R);
 
     constexpr MatrixStorage() : storage() {}
+    constexpr MatrixStorage(MatrixStorage const& o) : storage(o.storage) {}
 };
 
 ///
@@ -47,6 +48,7 @@ struct alignas(16) MatrixStorage<float, 4, 4> {
     static_assert(sizeof(StorageType) == sizeof(float) * 4 * 4);
 
     MatrixStorage() : storage() {}
+    constexpr MatrixStorage(MatrixStorage const& o) : storage(o.storage) {}
 };
 
 ///

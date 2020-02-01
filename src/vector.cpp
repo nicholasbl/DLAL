@@ -32,6 +32,9 @@ TEST_CASE("Vector Library") {
             Vec3 zv3;
             Vec4 zv4;
 
+            glm::vec4 test;
+            test.data = _mm_set1_ps(1);
+
             REQUIRE(is(zv2, 0.0f, 0.0f));
             REQUIRE(is(zv3, 0.0f, 0.0f, 0.0f));
             REQUIRE(is(zv4, 0.0f, 0.0f, 0.0f, 0.0f));
