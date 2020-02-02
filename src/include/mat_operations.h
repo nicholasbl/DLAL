@@ -138,35 +138,40 @@ auto inverse(mat<T, 3, 3> const& m) {
 }
 
 
-inline __m128 _matrix2x2_multiply(__m128 vec1, __m128 vec2) {
-    return vec1 * SWIZZLE(vec2, 0, 3, 0, 3) +
-           (SWIZZLE(vec1, 1, 0, 3, 2) * SWIZZLE(vec2, 2, 1, 2, 1));
+inline vec4 _matrix2x2_multiply(vec4 vec1, vec4 vec2) {
+    return vec1 * vec2.xwxw + (vec1.yxwz * vec2.zyzy);
 }
 
-inline __m128 _matrix2x2_adj_mult(__m128 vec1, __m128 vec2) {
-    return (SWIZZLE(vec1, 3, 3, 0, 0) * vec2) -
-           (SWIZZLE(vec1, 1, 1, 2, 2) * SWIZZLE(vec2, 2, 3, 0, 1));
+inline vec4 _matrix2x2_adj_mult(vec4 vec1, vec4 vec2) {
+    return (vec1.wwxx * vec2) - (vec1.yyzz * vec2.zwxy);
 }
 
 
-inline __m128 _matrix2x2_mult_adj(__m128 vec1, __m128 vec2) {
-    return (vec1 * SWIZZLE(vec2, 3, 0, 3, 0)) -
-           (SWIZZLE(vec1, 1, 0, 3, 2) * SWIZZLE(vec2, 2, 1, 2, 1));
+inline vec4 _matrix2x2_mult_adj(vec4 vec1, vec4 vec2) {
+    return (vec1 * vec2.wxwx) - (vec1.yxwz * vec2.zyzy);
 }
+
+namespace matrix_detail {
+
+inline auto extract_a(vec4 a, vec4 b) { return _mm_movelh_ps(a, b); }
+inline auto extract_b(vec4 a, vec4 b) { return _mm_movehl_ps(b, a); }
+
+} // namespace matrix_detail
 
 inline auto transform_inverse(mat4 const& m) {
     using namespace vector_detail;
+    using namespace matrix_detail;
     // implementation based off Eric Zhang's
     // https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
     constexpr float SMALL_VALUE = 1E-8F;
 
     mat4 ret;
 
-    __m128 t0 = shuffle<0, 1, 0, 1>(m[0], m[1]);
-    __m128 t1 = shuffle<2, 3, 2, 3>(m[0], m[1]);
-    ret[0]    = shuffle<0, 2, 0, 3>(t0, m[2]);
-    ret[1]    = shuffle<1, 3, 1, 3>(t0, m[2]);
-    ret[2]    = shuffle<0, 2, 2, 3>(t1, m[2]);
+    __m128 t0 = extract_a(m[0], m[1]);
+    __m128 t1 = extract_b(m[0], m[1]);
+    ret[0]    = shuffle<0, 2, 4, 7>(t0, m[2]);
+    ret[1]    = shuffle<1, 3, 5, 7>(t0, m[2]);
+    ret[2]    = shuffle<0, 2, 6, 7>(t1, m[2]);
 
     __m128 size_sqr = ret[0] * ret[0];
     size_sqr += ret[1] * ret[1];
@@ -181,9 +186,9 @@ inline auto transform_inverse(mat4 const& m) {
     ret[2] = (ret[2] * rSizeSqr);
 
     // last line
-    ret[3] = (ret[0] * swizzle<0>(m[3]));
-    ret[3] = (ret[3] + (ret[1] * swizzle<1>(m[3])));
-    ret[3] = (ret[3] + (ret[2] * swizzle<2>(m[3])));
+    ret[3] = (ret[0] * (m[3].xxxx));
+    ret[3] = (ret[3] + (ret[1] * (m[3].yyyy)));
+    ret[3] = (ret[3] + (ret[2] * (m[3].zzzz)));
     ret[3] = _mm_setr_ps(0.f, 0.f, 0.f, 1.f) - ret[3];
 
     return ret;
@@ -191,33 +196,34 @@ inline auto transform_inverse(mat4 const& m) {
 
 inline auto inverse(mat4 const& m) {
     using namespace vector_detail;
+    using namespace matrix_detail;
     // implementation based off Eric Zhang's
     // https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
 
-    __m128 const A = shuffle<0, 1, 0, 1>(m[0], m[1]);
-    __m128 const B = shuffle<2, 3, 2, 3>(m[0], m[1]);
-    __m128 const C = shuffle<0, 1, 0, 1>(m[2], m[3]);
-    __m128 const D = shuffle<2, 3, 2, 3>(m[2], m[3]);
+    vec4 const A = extract_a(m[0], m[1]);
+    vec4 const B = extract_b(m[0], m[1]);
+    vec4 const C = extract_a(m[2], m[3]);
+    vec4 const D = extract_b(m[2], m[3]);
 
-    __m128 const det_sub =
+    vec4 const det_sub =
         (shuffle<0, 2, 4, 6>(m[0], m[2]) * shuffle<1, 3, 5, 7>(m[1], m[3])) -
         (shuffle<1, 3, 5, 7>(m[0], m[2]) * shuffle<0, 2, 4, 6>(m[1], m[3]));
-    __m128 const det_A = swizzle<0>(det_sub);
-    __m128 const det_B = swizzle<1>(det_sub);
-    __m128 const det_C = swizzle<2>(det_sub);
-    __m128 const det_D = swizzle<3>(det_sub);
+    vec4 const det_A = det_sub.xxxx;
+    vec4 const det_B = det_sub.yyyy;
+    vec4 const det_C = det_sub.zzzz;
+    vec4 const det_D = det_sub.wwww;
 
-    __m128 D_C = _matrix2x2_adj_mult(D, C);
-    __m128 A_B = _matrix2x2_adj_mult(A, B);
-    __m128 X   = (det_D * A) - _matrix2x2_multiply(B, D_C);
-    __m128 Y   = (det_B * C) - _matrix2x2_mult_adj(D, A_B);
-    __m128 Z   = (det_C * B) - _matrix2x2_mult_adj(A, D_C);
-    __m128 W   = (det_A * D) - _matrix2x2_multiply(C, A_B);
+    vec4 D_C = _matrix2x2_adj_mult(D, C);
+    vec4 A_B = _matrix2x2_adj_mult(A, B);
+    vec4 X   = (det_D * A) - _matrix2x2_multiply(B, D_C);
+    vec4 Y   = (det_B * C) - _matrix2x2_mult_adj(D, A_B);
+    vec4 Z   = (det_C * B) - _matrix2x2_mult_adj(A, D_C);
+    vec4 W   = (det_A * D) - _matrix2x2_multiply(C, A_B);
 
     __m128 det_M = (det_A * det_D);
     det_M        = (det_M + (det_B * det_C));
 
-    __m128 trace = (A_B * swizzle<0, 2, 1, 3>(D_C));
+    __m128 trace = (A_B * D_C.xzyw);
     trace        = _mm_hadd_ps(trace, trace);
     trace        = _mm_hadd_ps(trace, trace);
     det_M        = (det_M - trace);

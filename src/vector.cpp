@@ -57,9 +57,9 @@ TEST_CASE("Vector Library") {
         REQUIRE(is_same(v4, lv4));
 
 
-        vec4 w1 = vec_from(v2, 3.2f, 4.1f);
-        vec4 w2 = vec_from(3.2f, v2, 4.1f);
-        vec4 w3 = vec_from(3.2f, 4.1f, v2);
+        vec4 w1 = new_vec(v2, 3.2f, 4.1f);
+        vec4 w2 = new_vec(3.2f, v2, 4.1f);
+        vec4 w3 = new_vec(3.2f, 4.1f, v2);
 
         REQUIRE(is_same(w1, glm::vec4(1.0f, 2.3f, 3.2f, 4.1f)));
         REQUIRE(is_same(w2, glm::vec4(3.2f, 1.0f, 2.3f, 4.1f)));

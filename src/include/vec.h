@@ -18,6 +18,10 @@ namespace dct {
 ///
 ///
 
+#ifndef __SSE4_1__
+#error> SSE 4.1 Support is required
+#endif
+
 #define VEC_TRUE -1
 #define VEC_FALSE 0
 
@@ -50,45 +54,15 @@ namespace vector_detail {
 
 
 #ifdef __clang__
-#define SWIZZLE(A, X, Y, Z, W)                                                 \
-    __builtin_shufflevector(A, dct::ivec4{ X, Y, Z, W })
 #define SHUFFLE(A, B, X, Y, Z, W) __builtin_shufflevector(A, B, X, Y, Z, W)
 #else
-#define SWIZZLE(A, X, Y, Z, W)                                                 \
-    __builtin_shuffle(A, dct::vector_detail::ivec4{ X, Y, Z, W })
 #define SHUFFLE(A, B, X, Y, Z, W)                                              \
     __builtin_shuffle(A, B, dct::vector_detail::ivec4{ X, Y, Z, W })
 #endif
 
 template <int x, int y = x, int z = x, int w = x>
-__attribute__((always_inline)) auto swizzle(vec4 vec) {
-    return SWIZZLE(vec, x, y, z, w);
-}
-
-template <>
-__attribute__((always_inline)) inline auto swizzle<0, 0, 2, 2>(vec4 vec) {
-    return _mm_moveldup_ps(vec);
-}
-
-template <>
-__attribute__((always_inline)) inline auto swizzle<1, 1, 3, 3>(vec4 vec) {
-    return _mm_movehdup_ps(vec);
-}
-
-
-template <int x, int y = x, int z = x, int w = x>
 __attribute__((always_inline)) auto shuffle(vec4 a, vec4 b) {
     return SHUFFLE(a, b, x, y, z, w);
-}
-
-template <>
-__attribute__((always_inline)) inline auto shuffle<0, 1, 0, 1>(vec4 a, vec4 b) {
-    return _mm_movelh_ps(a, b);
-}
-
-template <>
-__attribute__((always_inline)) inline auto shuffle<2, 3, 2, 3>(vec4 a, vec4 b) {
-    return _mm_movehl_ps(b, a);
 }
 
 
@@ -111,12 +85,14 @@ constexpr T cabs(T a) {
     return (a > T(0)) ? a : -a;
 }
 
+inline int bool_to_vec_bool(bool b) { return b * -1; }
+
 } // namespace vector_detail
 
 // Creation ====================================================================
 
 template <class T, size_t N>
-vec<T, N> vec_from_array(std::array<T, N> a) {
+vec<T, N> new_vec(std::array<T, N> a) {
     vec<T, N> r;
     for (size_t i = 0; i < N; i++) {
         r[i] = a[i];
@@ -125,28 +101,42 @@ vec<T, N> vec_from_array(std::array<T, N> a) {
 }
 
 template <class T>
-vec<T, 4> vec_from(vec<T, 3> a, T b) {
+vec<T, 4> new_vec(vec<T, 3> a, T b) {
     return vec<T, 4>{ a.x, a.y, a.z, b };
 }
 
 template <class T>
-vec<T, 4> vec_from(vec<T, 2> a, vec<T, 2> b) {
+vec<T, 4> new_vec(vec<T, 2> a, vec<T, 2> b) {
     return vec<T, 4>{ a.x, a.y, b.x, b.y };
 }
 
 template <class T>
-vec<T, 4> vec_from(vec<T, 2> a, T b, T c) {
+vec<T, 4> new_vec(vec<T, 2> a, T b, T c) {
     return vec<T, 4>{ a.x, a.y, b, c };
 }
 
 template <class T>
-vec<T, 4> vec_from(T a, vec<T, 2> b, T c) {
+vec<T, 4> new_vec(T a, vec<T, 2> b, T c) {
     return vec<T, 4>{ a, b.x, b.y, c };
 }
 
 template <class T>
-vec<T, 4> vec_from(T a, T b, vec<T, 2> c) {
+vec<T, 4> new_vec(T a, T b, vec<T, 2> c) {
     return vec<T, 4>{ a, b, c.x, c.y };
+}
+
+inline vec<int, 4> new_vec(int a, int b, int c, int d) {
+    // clang, for some reason, doesnt use a single instruction, but does
+    // insertelement for each. no idea why.
+    return _mm_set_epi32(d, c, b, a);
+}
+
+inline vec<int, 4> new_vec(bool a, bool b, bool c, bool d) {
+    using namespace vector_detail;
+    return vec<int, 4>{ bool_to_vec_bool(a),
+                        bool_to_vec_bool(b),
+                        bool_to_vec_bool(c),
+                        bool_to_vec_bool(d) };
 }
 
 // Operations ==================================================================

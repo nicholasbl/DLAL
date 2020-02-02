@@ -258,7 +258,7 @@ TEST_CASE("Matrix Library") {
 
             REQUIRE(binary_vector_2<float>(
                 mat4(a_src),
-                dct::vec_from_array(b_src),
+                dct::new_vec(b_src),
                 [](auto const& a, auto const& b) { return a * b; }));
         }
 
@@ -269,7 +269,7 @@ TEST_CASE("Matrix Library") {
 
             REQUIRE(binary_vector_2<float>(
                 mat3(a_src),
-                dct::vec_from_array(b_src),
+                dct::new_vec(b_src),
                 [](auto const& a, auto const& b) { return a * b; }));
         }
     }
