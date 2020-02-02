@@ -159,6 +159,66 @@ constexpr vec<T, N> upgrade(vec<T, M> const& v) {
     }                                                                          \
     return ret;
 
+// =============================================================================
+
+template <class T, size_t N, size_t AT>
+vec<T, N> get_identity_vec() {
+    if constexpr (N == 1) {
+        return vec<T, N>(0);
+    } else if constexpr (N == 1) {
+        return vec<T, N>{ 1 };
+    } else if constexpr (N == 2) {
+        if constexpr (AT == 0) {
+            return vec<T, N>{ 1, 0 };
+        } else if constexpr (AT == 1) {
+            return vec<T, N>{ 0, 1 };
+        }
+    } else if constexpr (N == 3) {
+        if constexpr (AT == 0) {
+            return vec<T, N>{ 1, 0, 0 };
+        } else if constexpr (AT == 1) {
+            return vec<T, N>{ 0, 1, 0 };
+        } else if constexpr (AT == 2) {
+            return vec<T, N>{ 0, 0, 1 };
+        }
+    } else if constexpr (N == 4) {
+        if constexpr (AT == 0) {
+            return vec<T, N>{ 1, 0, 0, 0 };
+        } else if constexpr (AT == 1) {
+            return vec<T, N>{ 0, 1, 0, 0 };
+        } else if constexpr (AT == 2) {
+            return vec<T, N>{ 0, 0, 1, 0 };
+        } else if constexpr (AT == 3) {
+            return vec<T, N>{ 0, 0, 0, 1 };
+        }
+    }
+}
+
+template <class T, size_t C, size_t R>
+constexpr auto get_identity_storage() {
+    using ColumnType = vec<T, R>;
+
+    std::array<ColumnType, C> ret;
+
+    if constexpr (C == 1) {
+        ret[0] = get_identity_vec<T, R, 0>();
+    } else if constexpr (C == 2) {
+        ret[0] = get_identity_vec<T, R, 0>();
+        ret[1] = get_identity_vec<T, R, 1>();
+    } else if constexpr (C == 3) {
+        ret[0] = get_identity_vec<T, R, 0>();
+        ret[1] = get_identity_vec<T, R, 1>();
+        ret[2] = get_identity_vec<T, R, 2>();
+    } else if constexpr (C == 4) {
+        ret[0] = get_identity_vec<T, R, 0>();
+        ret[1] = get_identity_vec<T, R, 1>();
+        ret[2] = get_identity_vec<T, R, 2>();
+        ret[3] = get_identity_vec<T, R, 3>();
+    }
+
+    return ret;
+}
+
 } // namespace matrix_detail
 
 } // namespace dct

@@ -8,6 +8,9 @@
 
 namespace dct {
 
+struct identity_t {
+} static const identity;
+
 ///
 /// \brief The MatrixStorage class defines the column-major storage of the
 /// matrix. No size guarantees are made.
@@ -26,33 +29,10 @@ struct MatrixStorage {
 
     constexpr MatrixStorage() : storage() {}
     constexpr MatrixStorage(MatrixStorage const& o) : storage(o.storage) {}
+
+    constexpr MatrixStorage(identity_t)
+        : storage(matrix_detail::get_identity_storage<T, C, R>()) {}
 };
-
-///
-/// \brief The PackedMatrixStorage class defines the column-major storage of the
-/// matrix. Contents are packed to be sizeof(T) * C * R.
-///
-template <class T, size_t C, size_t R>
-struct PackedMatrixStorage {
-    using ColumnType = PackedVector<T, R>;
-    using RowType    = PackedVector<T, C>;
-
-    using StorageType = std::array<ColumnType, C>;
-
-    StorageType storage;
-
-    static_assert(sizeof(StorageType) == sizeof(T) * C * R);
-
-    constexpr PackedMatrixStorage() : storage() {}
-    constexpr PackedMatrixStorage(PackedMatrixStorage const& o)
-        : storage(o.storage) {}
-};
-
-template <class T, size_t C, size_t R>
-struct mat;
-
-template <class T, size_t C, size_t R>
-struct packed_mat;
 
 ///
 /// \brief The root Matrix template
@@ -82,7 +62,9 @@ public: // Basics
 
 public:
     /// \brief Initialize all cells to zero
-    constexpr mat() : Parent({}) {}
+    constexpr mat() : Parent() {}
+
+    constexpr mat(identity_t) : Parent(identity) {}
 
     constexpr mat(mat const&) = default;
 
@@ -153,24 +135,6 @@ public:
             Parent::storage[2] = upgrade<R>(other.storage[2]);
             Parent::storage[3] = upgrade<R>(other.storage[3]);
         }
-    }
-
-public:
-    /// \brief Obtain an identity matrix
-    static mat const& identity() {
-        static const mat ret = []() {
-            mat l;
-
-            for (size_t c = 0; c < C; c++) {
-                for (size_t r = 0; r < R; r++) {
-                    l[c][r] = (r == c) ? T(1) : T(0);
-                }
-            }
-
-            return l;
-        }();
-
-        return ret;
     }
 };
 

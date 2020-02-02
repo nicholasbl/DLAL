@@ -34,7 +34,7 @@ mat<T, 4, 4> rotate(mat<T, 4, 4> const& m, T angle, vec<T, 3> const& axis) {
     vec<T, 3> const cos_pack((T(1) - c) * naxis);
     vec<T, 3> const sin_pack = naxis * s;
 
-    auto rotation_part  = mat<T, 4, 4>::identity();
+    auto rotation_part  = mat<T, 4, 4>(identity);
     rotation_part[0][0] = c + cos_pack.x * naxis.x;
     rotation_part[0][1] = cos_pack.x * naxis.y + sin_pack.z;
     rotation_part[0][2] = cos_pack.x * naxis.z - sin_pack.y;

@@ -9,27 +9,31 @@
 
 namespace dct {
 
-///
+/// Notes:
 /// Vector equality uses -1 (all bits set)! If you want to use conditionals,
-/// look at the is_all or is_any set of functions!
-///
-/// Note that the C++ conversion rules from int to bool use b = i == 0; Any
-/// other value is true.
-///
+/// look at the is_all or is_any set of functions! The C++ conversion rules from
+/// int to bool use b = i == 0; Any other value is true, which helps.
 ///
 
 #ifndef __SSE4_1__
 #error> SSE 4.1 Support is required
 #endif
 
+// Define how OpenCL views true and false
 #define VEC_TRUE -1
 #define VEC_FALSE 0
 
+// We require extended vectors
 static_assert(__has_attribute(ext_vector_type));
 
+///
+/// \brief A templated typedef using extended vector types. Storage size is
+/// implementation defined.
+///
 template <class T, int N>
 using vec __attribute__((ext_vector_type(N))) = T;
 
+// Typedefs ====================================================================
 using vec1 = vec<float, 1>;
 using vec2 = vec<float, 2>;
 using vec3 = vec<float, 3>;
@@ -52,7 +56,8 @@ using i64vec4 = vec<int64_t, 4>;
 
 namespace vector_detail {
 
-
+// Shuffle interface.
+// TODO: clean up
 #ifdef __clang__
 #define SHUFFLE(A, B, X, Y, Z, W) __builtin_shufflevector(A, B, X, Y, Z, W)
 #else
@@ -64,9 +69,6 @@ template <int x, int y = x, int z = x, int w = x>
 __attribute__((always_inline)) auto shuffle(vec4 a, vec4 b) {
     return SHUFFLE(a, b, x, y, z, w);
 }
-
-
-// ==================
 
 // constexpr versions of these common functions
 
@@ -85,6 +87,9 @@ constexpr T cabs(T a) {
     return (a > T(0)) ? a : -a;
 }
 
+///
+/// \brief Convert a bool to an OpenCL boolean-int.
+///
 inline int bool_to_vec_bool(bool b) { return b * -1; }
 
 } // namespace vector_detail
@@ -127,7 +132,8 @@ vec<T, 4> new_vec(T a, T b, vec<T, 2> c) {
 
 inline vec<int, 4> new_vec(int a, int b, int c, int d) {
     // clang, for some reason, doesnt use a single instruction, but does
-    // insertelement for each. no idea why.
+    // insertelement for each. no idea why. does the same thing for the
+    // initializer.
     return _mm_set_epi32(d, c, b, a);
 }
 
@@ -141,6 +147,9 @@ inline vec<int, 4> new_vec(bool a, bool b, bool c, bool d) {
 
 // Operations ==================================================================
 
+///
+/// \brief Generic dot product.
+///
 template <class T, int N>
 T dot(vec<T, N> const& a, vec<T, N> const& b) {
     static_assert(N > 0 and N <= 4);
@@ -163,6 +172,17 @@ T dot(vec<T, N> const& a, vec<T, N> const& b) {
     return ret;
 }
 
+///
+/// \brief Dot product specialization for vec3
+///
+inline float dot(vec3 a, vec3 b) {
+    auto r = a * b;
+    return r.x + r.y + r.z;
+}
+
+///
+/// \brief Dot product specialization for vec4
+///
 inline float dot(vec4 a, vec4 b) {
     // documentation and testing shows this is faster than dp or hadd
     __m128 mult, shuf, sums;
@@ -174,6 +194,9 @@ inline float dot(vec4 a, vec4 b) {
     return _mm_cvtss_f32(sums);
 }
 
+///
+/// \brief Dot product for vec4, returning the value as a vec4(d,d,d,d).
+///
 inline vec4 dot_vec(vec4 a, vec4 b) {
     // documentation and testing shows this is faster than dp or hadd
     __m128 mult, shuf, sums;
@@ -184,40 +207,64 @@ inline vec4 dot_vec(vec4 a, vec4 b) {
     return _mm_add_ss(sums, shuf);
 }
 
-
+///
+/// \brief Cross product.
+///
 template <class T>
 vec<T, 3> cross(vec<T, 3> const& a, vec<T, 3> const& b) {
-    return vec<T, 3>{ a.y * b.z - b.y * a.z,
-                      a.z * b.x - b.z * a.x,
-                      a.x * b.y - b.x * a.y };
+    //    return vec<T, 3>{ a.y * b.z - b.y * a.z,
+    //                      a.z * b.x - b.z * a.x,
+    //                      a.x * b.y - b.x * a.y };
+    return (a.yzx * b.zxy) - (b.yzx * a.zxy);
 }
 
+///
+/// \brief Compute the length of a vector.
+///
 template <class T, int N>
 T length(vec<T, N> const& a) {
     return std::sqrt(dot(a, a));
 }
 
+///
+/// \brief Compute the length, squared, of a vector.
+///
 template <class T, int N>
 T length_squared(vec<T, N> const& a) {
     return dot(a, a);
 }
 
+///
+/// \brief Compute the distance between two points.
+///
 template <class T, int N>
 T distance(vec<T, N> const& a, vec<T, N> const& b) {
     return length(b - a);
 }
 
+///
+/// \brief Compute the distance, squared, between two points.
+///
 template <class T, int N>
 T distance_squared(vec<T, N> const& a, vec<T, N> const& b) {
     return length_squared(b - a);
 }
 
+///
+/// \brief Normalize the length of a vector. This does NOT check if the length
+/// of the vector is zero; if so, expect badness.
+///
 template <class T, int N>
 vec<T, N> normalize(vec<T, N> const& a) {
     static_assert(std::is_floating_point_v<T>, "Floating point required");
     return a / length(a);
 }
 
+///
+/// \brief Reflect a vector
+/// \param a The vector to reflect.
+/// \param normal The surface normal to reflect off of.
+///
 template <class T, int N>
 vec<T, N> reflect(vec<T, N> const& a, vec<T, N> const& normal) {
     static_assert(std::is_floating_point_v<T>, "Floating point required");
@@ -226,6 +273,9 @@ vec<T, N> reflect(vec<T, N> const& a, vec<T, N> const& normal) {
 
 // Boolean =====================================================================
 
+///
+/// \brief Check if all 'boolean ints' are true
+///
 template <int N>
 bool is_all(vec<int, N> const& a) {
     // TODO: optimize
@@ -240,6 +290,9 @@ bool is_all(vec<int, N> const& a) {
     }
 }
 
+///
+/// \brief Check if any 'boolean ints' are true
+///
 template <int N>
 bool is_any(vec<int, N> const& a) {
     if constexpr (N == 1) {
@@ -253,21 +306,35 @@ bool is_any(vec<int, N> const& a) {
     }
 }
 
+///
+/// \brief Check if two vectors are component-wise equal. Beware of using this
+/// with floats.
+///
 template <class T, int N>
 bool is_equal(vec<T, N> const& a, vec<T, N> const& b) {
     return is_all(a == b);
 }
 
+///
+/// \brief Check if two vectors are component-wise close enough to each other,
+/// with a given limit.
+///
 template <class T, size_t N>
 bool is_equal(vec<T, N> const& a, vec<T, N> const& b, T limit) {
     static_assert(std::is_floating_point_v<T>);
 
-    auto      delta = abs(a - b);
-    vec<T, N> c(limit);
+    auto      delta = distance_squared(a - b);
+    vec<T, N> c(limit * limit);
 
     return is_all(delta < c);
 }
 
+///
+/// \brief Select components between two vectors.
+/// \param s A boolean-int vector. O selects from a, -1 selects from b.
+/// \param a First vector
+/// \param b Second vector
+///
 template <class T, int N>
 vec<T, N> select(vec<int, N> s, vec<T, N> a, vec<T, N> b) {
     vec<T, N> ret;
@@ -278,6 +345,10 @@ vec<T, N> select(vec<int, N> s, vec<T, N> a, vec<T, N> b) {
 }
 
 // Other =======================================================================
+
+///
+/// \brief Compute the component-wise min between two vectors.
+///
 template <class T, size_t N>
 vec<T, N> min(vec<T, N> const& a, vec<T, N> const& b) {
     vec<T, N> ret;
@@ -300,6 +371,9 @@ vec<T, N> min(vec<T, N> const& a, vec<T, N> const& b) {
     return ret;
 }
 
+///
+/// \brief Compute the component-wise max between two vectors.
+///
 template <class T, size_t N>
 vec<T, N> max(vec<T, N> const& a, vec<T, N> const& b) {
     vec<T, N> ret;
@@ -322,6 +396,9 @@ vec<T, N> max(vec<T, N> const& a, vec<T, N> const& b) {
     return ret;
 }
 
+///
+/// \brief Compute the min between all components of a vector.
+///
 template <class T, size_t N>
 T component_min(vec<T, N> const& a) {
     using namespace vector_detail;
@@ -336,7 +413,9 @@ T component_min(vec<T, N> const& a) {
     }
 }
 
-
+///
+/// \brief Compute the max between all components of a vector.
+///
 template <class T, size_t N>
 T component_max(vec<T, N> const& a) {
     using namespace vector_detail;
@@ -351,6 +430,9 @@ T component_max(vec<T, N> const& a) {
     }
 }
 
+///
+/// \brief Compute the sum of all components of a vector.
+///
 template <class T, size_t N>
 T component_sum(vec<T, N> const& a) {
     using namespace vector_detail;
@@ -365,6 +447,9 @@ T component_sum(vec<T, N> const& a) {
     }
 }
 
+///
+/// \brief Compute the absolute value component-wise, of a vector.
+///
 template <class T, size_t N>
 vec<T, N> abs(vec<T, N> const& a) {
     vec<T, N> ret;
@@ -387,6 +472,9 @@ vec<T, N> abs(vec<T, N> const& a) {
     return ret;
 }
 
+///
+/// \brief Compute the floor for each component of a vector
+///
 template <class T, size_t N>
 vec<T, N> floor(vec<T, N> const& a) {
     vec<T, N> ret;
@@ -409,6 +497,9 @@ vec<T, N> floor(vec<T, N> const& a) {
     return ret;
 }
 
+///
+/// \brief Compute the ceil for each component of a vector
+///
 template <class T, size_t N>
 vec<T, N> ceil(vec<T, N> const& a) {
     vec<T, N> ret;
@@ -431,6 +522,9 @@ vec<T, N> ceil(vec<T, N> const& a) {
     return ret;
 }
 
+///
+/// \brief Compute the floor for each component of a vector
+///
 template <class T, size_t N>
 vec<T, N>
 clamp(vec<T, N> const& x, vec<T, N> const& min_val, vec<T, N> const& max_val) {

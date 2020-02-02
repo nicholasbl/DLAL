@@ -29,6 +29,7 @@ HEADERS += \
     include/mat_detail.h \
     include/mat_operations.h \
     include/mat_transforms.h \
+    include/packed_mat.h \
     include/packed_vec.h \
     include/quat.h \
     include/tmatrix.h \

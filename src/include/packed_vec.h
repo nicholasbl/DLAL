@@ -46,6 +46,8 @@ public:
 
     constexpr PackedVector& operator=(PackedVector const& v) = default;
 
+    operator vec<T, 1>() const { return vec<T, 1>{ x }; }
+
 public:
     T*       data() { return storage.data(); }
     T const* data() const { return storage.data(); }
@@ -88,6 +90,8 @@ public:
     constexpr PackedVector(vec<T, 2> simd) : PackedVector(simd.x, simd.y) {}
 
     constexpr PackedVector& operator=(PackedVector const& v) = default;
+
+    operator vec<T, 2>() const { return vec<T, 2>{ x, y }; }
 
 public:
     T*       data() { return storage.data(); }
@@ -134,6 +138,8 @@ public:
         : PackedVector(simd.x, simd.y, simd.z) {}
 
     constexpr PackedVector& operator=(PackedVector const& v) = default;
+
+    operator vec<T, 3>() const { return vec<T, 3>{ x, y, z }; }
 
 public:
     T*       data() { return storage.data(); }
@@ -183,56 +189,11 @@ public:
 
     constexpr PackedVector& operator=(PackedVector const& v) = default;
 
+    operator vec<T, 4>() const { return vec<T, 4>{ x, y, z, w }; }
+
 public:
     T*       data() { return storage.data(); }
     T const* data() const { return storage.data(); }
-
-    constexpr auto begin() { return storage.begin(); }
-    constexpr auto begin() const { return storage.begin(); }
-    constexpr auto end() { return storage.end(); }
-    constexpr auto end() const { return storage.end(); }
-};
-
-// Vector Bool specialization
-// This is due to the way OpenCL class vectors use ints for bools.
-
-template <size_t N>
-struct PackedVector<bool, N> {
-    using StorageType = std::array<bool, N>;
-
-    union {
-        StorageType storage;
-        struct {
-            bool x, y, z, w;
-        };
-    };
-
-public: // Basics
-    constexpr size_t size() { return storage.size(); }
-
-    constexpr bool&       operator[](size_t i) { return storage[i]; }
-    constexpr bool const& operator[](size_t i) const { return storage[i]; }
-
-public:
-    /// \brief Initialize all elements to zero
-    constexpr PackedVector() : storage() {}
-    constexpr PackedVector(PackedVector const&) = default;
-
-    /// \brief Initialize all elements to the provided value
-    constexpr PackedVector(bool _xyzw)
-        : PackedVector(_xyzw, _xyzw, _xyzw, _xyzw) {}
-    constexpr PackedVector(StorageType st) : storage(st) {}
-    constexpr PackedVector(bool _x, bool _y, bool _z, bool _w)
-        : storage{ _x, _y, _z, _w } {}
-
-    constexpr PackedVector(vec<int, 4> simd)
-        : PackedVector(simd.x, simd.y, simd.z, simd.w) {}
-
-    constexpr PackedVector& operator=(PackedVector const& v) = default;
-
-public:
-    bool*       data() { return storage.data(); }
-    bool const* data() const { return storage.data(); }
 
     constexpr auto begin() { return storage.begin(); }
     constexpr auto begin() const { return storage.begin(); }

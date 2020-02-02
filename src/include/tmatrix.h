@@ -21,7 +21,7 @@ namespace dct {
 /// scale.
 ///
 class TMatrix {
-    mat4 m_mat = mat4::identity();
+    mat4 m_mat = mat4(identity);
 
 public:
     /// \brief Create a default transformation matrix (the identity)
@@ -200,7 +200,7 @@ inline void TMatrix::scale(float f) {
     dct::scale_in_place(m_mat, vec3{ f, f, f });
 }
 
-inline void TMatrix::clear_rotation_scale() { m_mat.assign(mat3::identity()); }
+inline void TMatrix::clear_rotation_scale() { m_mat.assign(mat3(identity)); }
 
 inline void TMatrix::set_column(size_t col, vec3 const& v) {
     m_mat[col] = vec4{ v.x, v.y, v.z, 0 };
@@ -333,7 +333,7 @@ make_look_at_lh(vec3 const& eye, vec3 const& center, vec3 const& up) {
     vec3 const s(normalize(cross(up, f)));
     vec3 const u(cross(f, s));
 
-    auto mat  = mat4::identity();
+    auto mat  = mat4(identity);
     mat[0][0] = s.x;
     mat[1][0] = s.y;
     mat[2][0] = s.z;
