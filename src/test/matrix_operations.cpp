@@ -1,5 +1,5 @@
 #include "doctest.h"
-#include "include/mat_operations.h"
+#include "mat_operations.h"
 
 #include "test_common.h"
 

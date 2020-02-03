@@ -1,4 +1,4 @@
-#include "include/quat.h"
+#include "quat.h"
 #include "doctest.h"
 #include "test_common.h"
 

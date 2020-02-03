@@ -1,8 +1,8 @@
 #ifndef TEST_COMMON_H
 #define TEST_COMMON_H
 
-#include "include/mat.h"
-#include "include/packed_vec.h"
+#include "mat.h"
+#include "packed_vec.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>

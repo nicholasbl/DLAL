@@ -1,4 +1,4 @@
-#include "include/tmatrix.h"
+#include "tmatrix.h"
 #include "doctest.h"
 
 #include "test_common.h"
