@@ -10,6 +10,9 @@ namespace dct {
 
 namespace matrix_detail {
 
+///
+/// \brief Helper function to clip or extend a vector, copying from another.
+///
 template <int N, class T, int M>
 constexpr vec<T, N> upgrade(vec<T, M> const& v) {
     constexpr size_t C = vector_detail::cmin(N, M);
@@ -25,6 +28,34 @@ constexpr vec<T, N> upgrade(vec<T, M> const& v) {
         return vec<T, N>{ v.x, v.y, v.z, v.w };
     }
     return ret;
+}
+
+
+///
+/// \brief Helper function to copy range of a vector onto another
+///
+template <int DEST_N, class T, int SRC_N>
+constexpr void overlay(vec<T, SRC_N> const& src, vec<T, DEST_N>& dest) {
+    constexpr size_t LOW_N = vector_detail::cmin(DEST_N, SRC_N);
+    static_assert(LOW_N <= 4);
+
+    if constexpr (SRC_N == DEST_N) {
+        dest = src;
+    } else if constexpr (LOW_N == 1) {
+        dest.x = src.x;
+    } else if constexpr (LOW_N == 2) {
+        dest.x = src.x;
+        dest.y = src.y;
+    } else if constexpr (LOW_N == 3) {
+        dest.x = src.x;
+        dest.y = src.y;
+        dest.z = src.z;
+    } else if constexpr (LOW_N == 4) {
+        dest.x = src.x;
+        dest.y = src.y;
+        dest.z = src.z;
+        dest.w = src.w;
+    }
 }
 
 
@@ -161,10 +192,16 @@ constexpr vec<T, N> upgrade(vec<T, M> const& v) {
 
 // =============================================================================
 
+///
+/// \brief Construct a vector (branchless at runtime) with a 1 in the requested
+/// spot.
+///
 template <class T, size_t N, size_t AT>
 vec<T, N> get_identity_vec() {
-    if constexpr (N == 1) {
+    // If a 1 is wanted outside our range...
+    if constexpr (N == 1 and AT >= N) {
         return vec<T, N>(0);
+        // else construct a vector with a 1 in the right slot
     } else if constexpr (N == 1) {
         return vec<T, N>{ 1 };
     } else if constexpr (N == 2) {
@@ -194,6 +231,9 @@ vec<T, N> get_identity_vec() {
     }
 }
 
+///
+/// \brief Construct a (branchless at runtime) identity storage for mats.
+///
 template <class T, size_t C, size_t R>
 constexpr auto get_identity_storage() {
     using ColumnType = vec<T, R>;

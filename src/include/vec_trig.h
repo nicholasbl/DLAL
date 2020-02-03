@@ -26,40 +26,65 @@ namespace dct {
     }                                                                          \
     return ret;
 
+#define SPEC_VECTOR_OP(OP, SIMD)                                               \
+    inline vec4 OP(vec4 const& a) { return SIMD(a); }                          \
+    inline vec3 OP(vec3 const& a) {                                            \
+        using namespace vector_detail;                                         \
+        return v4to3(OP(v3to4(a)));                                            \
+    }                                                                          \
+    inline vec2 OP(vec2 const& a) {                                            \
+        using namespace vector_detail;                                         \
+        return v4to2(OP(v2to4(a)));                                            \
+    }
+
+
+template <class T, int N>
+vec<T, N> sqrt(vec<T, N> const& a){ VECTOR_OP(std::sqrt) }
+
+SPEC_VECTOR_OP(sqrt, _mm_sqrt_ps);
+
 template <class T, int N>
 vec<T, N> acos(vec<T, N> const& a) {
     VECTOR_OP(std::acos)
 }
+
 template <class T, int N>
 vec<T, N> cos(vec<T, N> const& a) {
     VECTOR_OP(std::cos)
 }
+
 template <class T, int N>
 vec<T, N> asin(vec<T, N> const& a) {
     VECTOR_OP(std::asin)
 }
+
 template <class T, int N>
 vec<T, N> sin(vec<T, N> const& a) {
     VECTOR_OP(std::sin)
 }
+
 template <class T, int N>
 vec<T, N> atan(vec<T, N> const& a) {
     VECTOR_OP(std::atan)
 }
+
 template <class T, int N>
 vec<T, N> tan(vec<T, N> const& a) {
     VECTOR_OP(std::tan)
 }
+
 template <class T, int N>
 vec<T, N> exp(vec<T, N> const& a) {
     VECTOR_OP(std::exp)
 }
+
 template <class T, int N>
 vec<T, N> log(vec<T, N> const& a) {
     VECTOR_OP(std::log)
 }
 
 #undef VECTOR_OP
+#undef SPEC_VECTOR_OP
 
 } // namespace dct
 

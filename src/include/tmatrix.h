@@ -200,7 +200,7 @@ inline void TMatrix::scale(float f) {
     dct::scale_in_place(m_mat, vec3{ f, f, f });
 }
 
-inline void TMatrix::clear_rotation_scale() { m_mat.assign(mat3(identity)); }
+inline void TMatrix::clear_rotation_scale() { m_mat.inset(mat3(identity)); }
 
 inline void TMatrix::set_column(size_t col, vec3 const& v) {
     m_mat[col] = vec4{ v.x, v.y, v.z, 0 };

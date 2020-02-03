@@ -12,29 +12,6 @@ struct identity_t {
 } static const identity;
 
 ///
-/// \brief The MatrixStorage class defines the column-major storage of the
-/// matrix. No size guarantees are made.
-///
-template <class T, size_t C, size_t R>
-struct MatrixStorage {
-    using ColumnType = vec<T, R>;
-    using RowType    = vec<T, C>;
-
-    using StorageType = std::array<ColumnType, C>;
-
-    StorageType storage;
-
-    static constexpr bool is_contiguous =
-        sizeof(storage) == (sizeof(T) * C * R);
-
-    constexpr MatrixStorage() : storage() {}
-    constexpr MatrixStorage(MatrixStorage const& o) : storage(o.storage) {}
-
-    constexpr MatrixStorage(identity_t)
-        : storage(matrix_detail::get_identity_storage<T, C, R>()) {}
-};
-
-///
 /// \brief The root Matrix template
 ///
 /// \tparam T The cell value type of the matrix
@@ -42,37 +19,50 @@ struct MatrixStorage {
 /// \tparam R The number of rows
 ///
 template <class T, size_t C, size_t R>
-struct mat : public MatrixStorage<T, C, R> {
+struct mat {
+    using ColumnType = vec<T, R>;
+    using RowType    = vec<T, C>;
 
-    using Parent = MatrixStorage<T, C, R>;
+    using StorageType = std::array<ColumnType, C>;
 
-    using StorageType = typename MatrixStorage<T, C, R>::StorageType;
-    using ColumnType  = typename MatrixStorage<T, C, R>::ColumnType;
+    StorageType storage;
+
+    /// Indicates if the type uses contiguous storage, which can speed up
+    /// copies/conversions.
+    static constexpr bool is_contiguous =
+        sizeof(storage) == (sizeof(T) * C * R);
 
 public: // Basics
+    ///
+    /// \brief Get the total number of cells
+    ///
     constexpr size_t size() { return C * R; }
     constexpr size_t row_count() { return R; }
     constexpr size_t column_count() { return C; }
 
-    // column major
-    constexpr ColumnType& operator[](size_t i) { return Parent::storage[i]; }
+    /// @{
+    /// \brief Access a column.
+    constexpr ColumnType&       operator[](size_t i) { return storage[i]; }
     constexpr ColumnType const& operator[](size_t i) const {
-        return Parent::storage[i];
+        return storage[i];
     }
+    /// @}
 
 public:
     /// \brief Initialize all cells to zero
-    constexpr mat() : Parent() {}
+    constexpr mat() : storage() {}
 
-    constexpr mat(identity_t) : Parent(identity) {}
+    /// \brief Initialize the matrix to the identity.
+    constexpr mat(identity_t)
+        : storage(matrix_detail::get_identity_storage<T, C, R>()) {}
 
     constexpr mat(mat const&) = default;
 
     constexpr mat(std::array<float, C * R> const& a) {
-        if constexpr (Parent::is_contiguous) {
+        if constexpr (is_contiguous) {
             std::copy(a.data(),
                       a.data() + a.size(),
-                      reinterpret_cast<T*>(&Parent::storage[0]));
+                      reinterpret_cast<T*>(&storage[0]));
         } else {
             for (size_t i = 0; i < C; ++i) {
                 for (size_t j = 0; j < R; ++j) {
@@ -83,9 +73,9 @@ public:
     }
 
     /// \brief Initialize all cells to the given value
-    constexpr mat(T value) { Parent::storage.fill(value); }
+    constexpr mat(T value) { storage.fill(value); }
 
-    constexpr mat(StorageType pack) : Parent::storage(pack) {}
+    constexpr mat(StorageType pack) : storage(pack) {}
 
     /// \brief Initialize values from a differently sized matrix, zeros
     /// otherwise.
@@ -96,44 +86,48 @@ public:
         // no loops for speed in debug mode
 
         if constexpr (bound == 1) {
-            Parent::storage[0] = upgrade<R>(other.storage[0]);
+            storage[0] = upgrade<R>(other.storage[0]);
         } else if constexpr (bound == 2) {
-            Parent::storage[0] = upgrade<R>(other.storage[0]);
-            Parent::storage[1] = upgrade<R>(other.storage[1]);
+            storage[0] = upgrade<R>(other.storage[0]);
+            storage[1] = upgrade<R>(other.storage[1]);
         } else if constexpr (bound == 3) {
-            Parent::storage[0] = upgrade<R>(other.storage[0]);
-            Parent::storage[1] = upgrade<R>(other.storage[1]);
-            Parent::storage[2] = upgrade<R>(other.storage[2]);
+            storage[0] = upgrade<R>(other.storage[0]);
+            storage[1] = upgrade<R>(other.storage[1]);
+            storage[2] = upgrade<R>(other.storage[2]);
         } else if constexpr (bound == 4) {
-            Parent::storage[0] = upgrade<R>(other.storage[0]);
-            Parent::storage[1] = upgrade<R>(other.storage[1]);
-            Parent::storage[2] = upgrade<R>(other.storage[2]);
-            Parent::storage[3] = upgrade<R>(other.storage[3]);
+            storage[0] = upgrade<R>(other.storage[0]);
+            storage[1] = upgrade<R>(other.storage[1]);
+            storage[2] = upgrade<R>(other.storage[2]);
+            storage[3] = upgrade<R>(other.storage[3]);
         }
     }
 
 public:
-    /// \brief Copy values from a differently sized matrix.
+    mat& operator=(mat const& m) = default;
+
+
+public:
+    /// \brief Copy values from a differently sized matrix into this one.
     template <size_t C2, size_t R2>
-    void assign(mat<T, C2, R2> const& other) {
+    void inset(mat<T, C2, R2> const& other) {
         using namespace matrix_detail;
         constexpr size_t bound = C2 < C ? C2 : C;
         // no loops for speed in debug mode
 
         if constexpr (bound == 1) {
-            Parent::storage[0] = upgrade<R>(other.storage[0]);
+            overlay(other.storage[0], storage[0]);
         } else if constexpr (bound == 2) {
-            Parent::storage[0] = upgrade<R>(other.storage[0]);
-            Parent::storage[1] = upgrade<R>(other.storage[1]);
+            overlay(other.storage[0], storage[0]);
+            overlay(other.storage[1], storage[1]);
         } else if constexpr (bound == 3) {
-            Parent::storage[0] = upgrade<R>(other.storage[0]);
-            Parent::storage[1] = upgrade<R>(other.storage[1]);
-            Parent::storage[2] = upgrade<R>(other.storage[2]);
+            overlay(other.storage[0], storage[0]);
+            overlay(other.storage[1], storage[1]);
+            overlay(other.storage[2], storage[2]);
         } else if constexpr (bound == 4) {
-            Parent::storage[0] = upgrade<R>(other.storage[0]);
-            Parent::storage[1] = upgrade<R>(other.storage[1]);
-            Parent::storage[2] = upgrade<R>(other.storage[2]);
-            Parent::storage[3] = upgrade<R>(other.storage[3]);
+            overlay(other.storage[0], storage[0]);
+            overlay(other.storage[1], storage[1]);
+            overlay(other.storage[2], storage[2]);
+            overlay(other.storage[3], storage[3]);
         }
     }
 };
@@ -144,8 +138,23 @@ using mat2 = mat<float, 2, 2>;
 using mat3 = mat<float, 3, 3>;
 using mat4 = mat<float, 4, 4>;
 
+using mat22 = mat<float, 2, 2>;
+using mat23 = mat<float, 2, 3>;
+using mat24 = mat<float, 2, 4>;
+
+using mat32 = mat<float, 3, 2>;
+using mat33 = mat<float, 3, 3>;
+using mat34 = mat<float, 3, 4>;
+
+using mat42 = mat<float, 4, 2>;
+using mat43 = mat<float, 4, 3>;
+using mat44 = mat<float, 4, 4>;
+
 // Accessors ===================================================================
 
+/// {
+/// Get a pointer to the underlying value type array. This is only viable for
+/// contiguous matrices. In general, use packed versions instead.
 template <class T, size_t C, size_t R>
 T* data(mat<T, C, R>& m) {
     static_assert(mat<T, C, R>::is_contiguous,
@@ -159,6 +168,7 @@ T const* data(mat<T, C, R> const& m) {
                   "Matrix must have contiguous storage.");
     return reinterpret_cast<T const*>(&m.storage[0]);
 }
+/// }
 
 // Unary =======================================================================
 template <class T, size_t C, size_t R>
@@ -251,7 +261,7 @@ auto operator*(mat<T, C, R> const& m, vec<T, R> const& o) {
 }
 
 
-// loop free versions for the most common cases
+/// Specialization for common case
 inline auto operator*(mat3 const& m, mat3 const& o) {
     auto const m0 = m[0];
     auto const m1 = m[1];
@@ -268,6 +278,7 @@ inline auto operator*(mat3 const& m, mat3 const& o) {
     return ret;
 }
 
+/// Specialization for common case
 inline auto operator*(mat4 const& m, mat4 const& o) {
     auto const m0 = m[0];
     auto const m1 = m[1];
@@ -383,6 +394,11 @@ auto operator||(mat<bool, C, R> const& m, mat<bool, C, R> const& o) {
 #undef MATRIX_BINARY_BOOL
 
 // Other =======================================================================
+
+///
+/// \brief Ask if all cells are true. Note that 'true' is the OpenCL boolean
+/// true of -1.
+///
 template <size_t C, size_t R>
 bool is_all(mat<int, C, R> const& a) {
     if constexpr (C == 1) {
@@ -396,6 +412,10 @@ bool is_all(mat<int, C, R> const& a) {
     }
 }
 
+///
+/// \brief Ask if any cells are true. Note that 'true' is the OpenCL boolean
+/// true of -1.
+///
 template <size_t C, size_t R>
 bool is_any(mat<int, C, R> const& a) {
     if constexpr (C == 1) {
@@ -409,11 +429,18 @@ bool is_any(mat<int, C, R> const& a) {
     }
 }
 
+///
+/// \brief Ask two mats are equal. Note that this is not safe for use with
+/// floats.
+///
 template <class T, size_t C, size_t R>
 bool is_equal(mat<T, C, R> const& a, mat<T, C, R> const& b) {
     return is_all(a == b);
 }
 
+///
+/// \brief Ask if two mats are equal with a per-cell error limit.
+///
 template <class T, size_t C, size_t R>
 bool is_equal(mat<T, C, R> const& a, mat<T, C, R> const& b, T limit) {
     static_assert(std::is_floating_point_v<T>);

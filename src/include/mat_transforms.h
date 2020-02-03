@@ -7,6 +7,9 @@
 
 namespace dct {
 
+///
+/// \brief Add a translation to a matrix, in place
+///
 template <class T>
 mat<T, 4, 4> translate(mat<T, 4, 4> const& m, vec<T, 3> const& v) {
     mat<T, 4, 4> ret(m);
@@ -14,6 +17,9 @@ mat<T, 4, 4> translate(mat<T, 4, 4> const& m, vec<T, 3> const& v) {
     return ret;
 }
 
+///
+/// \brief Add a translation to a matrix, in place
+///
 template <class T>
 void translate_in_place(mat<T, 4, 4>& m, vec<T, 3> const& v) {
     m[3] = m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3];
@@ -21,12 +27,14 @@ void translate_in_place(mat<T, 4, 4>& m, vec<T, 3> const& v) {
 
 
 ///
-/// \brief Rotate a given vector by an axis and an angle
-/// \param axis Rotate around this (possibly not-normalized) axis
+/// \brief Add a rotation to a given matrix by an axis and an angle
+/// \param m       Matrix to operate on
+/// \param radians Rotation angle, in radians
+/// \param axis    Rotate around this (possibly not-normalized) axis
 ///
 template <class T>
-mat<T, 4, 4> rotate(mat<T, 4, 4> const& m, T angle, vec<T, 3> const& axis) {
-    T const a = angle;
+mat<T, 4, 4> rotate(mat<T, 4, 4> const& m, T radians, vec<T, 3> const& axis) {
+    T const a = radians;
     T const c = std::cos(a);
     T const s = std::sin(a);
 
@@ -58,6 +66,10 @@ mat<T, 4, 4> rotate(mat<T, 4, 4> const& m, T angle, vec<T, 3> const& axis) {
     return ret;
 }
 
+
+///
+/// \brief Add a scale to a given matrix
+///
 template <class T>
 mat<T, 4, 4> scale(mat<T, 4, 4> const& m, vec<T, 3> const& v) {
     mat<T, 4, 4> ret;
@@ -68,6 +80,9 @@ mat<T, 4, 4> scale(mat<T, 4, 4> const& m, vec<T, 3> const& v) {
     return ret;
 }
 
+///
+/// \brief Add a scale, in place, to a given matrix
+///
 template <class T>
 void scale_in_place(mat<T, 4, 4>& m, vec<T, 3> const& v) {
     m[0] = m[0] * v[0];

@@ -26,9 +26,26 @@ namespace dct {
 // We require extended vectors
 static_assert(__has_attribute(ext_vector_type));
 
-///
+/// @{
 /// \brief A templated typedef using extended vector types. Storage size is
 /// implementation defined.
+///
+/// Does NOT initialize on default construction:
+/// \code
+/// vec4 v;
+/// \endcode
+/// This does not ensure components are zero.
+///
+/// \code
+/// vec4 v = {};
+/// \endcode
+/// This does.
+///
+/// Other rules:
+/// \code
+/// vec4 v(3); // fill all components with 3
+/// vec4 v{1,2,3}; // fill components specified, and set w to zero.
+/// \endcode
 ///
 template <class T, int N>
 using vec __attribute__((ext_vector_type(N))) = T;
@@ -53,6 +70,7 @@ using i64vec1 = vec<int64_t, 1>;
 using i64vec2 = vec<int64_t, 2>;
 using i64vec3 = vec<int64_t, 3>;
 using i64vec4 = vec<int64_t, 4>;
+///@}
 
 namespace vector_detail {
 
@@ -91,6 +109,14 @@ constexpr T cabs(T a) {
 /// \brief Convert a bool to an OpenCL boolean-int.
 ///
 inline int bool_to_vec_bool(bool b) { return b * -1; }
+
+inline vec4 v3to4(vec3 a) { return __builtin_shufflevector(a, a, 0, 1, 2, -1); }
+inline vec4 v2to4(vec2 a) {
+    return __builtin_shufflevector(a, a, 0, 1, -1, -1);
+}
+
+inline vec2 v4to2(vec4 a) { return __builtin_shufflevector(a, a, 0, 1); }
+inline vec3 v4to3(vec4 a) { return __builtin_shufflevector(a, a, 0, 1, 2); }
 
 } // namespace vector_detail
 
@@ -212,9 +238,6 @@ inline vec4 dot_vec(vec4 a, vec4 b) {
 ///
 template <class T>
 vec<T, 3> cross(vec<T, 3> const& a, vec<T, 3> const& b) {
-    //    return vec<T, 3>{ a.y * b.z - b.y * a.z,
-    //                      a.z * b.x - b.z * a.x,
-    //                      a.x * b.y - b.x * a.y };
     return (a.yzx * b.zxy) - (b.yzx * a.zxy);
 }
 
@@ -323,7 +346,7 @@ template <class T, size_t N>
 bool is_equal(vec<T, N> const& a, vec<T, N> const& b, T limit) {
     static_assert(std::is_floating_point_v<T>);
 
-    auto      delta = distance_squared(a - b);
+    auto      delta = distance_squared(a, b);
     vec<T, N> c(limit * limit);
 
     return is_all(delta < c);
@@ -335,12 +358,29 @@ bool is_equal(vec<T, N> const& a, vec<T, N> const& b, T limit) {
 /// \param a First vector
 /// \param b Second vector
 ///
+/// Even though we are not using explicit vector instructions, this looks to be
+/// optimal.
+///
 template <class T, int N>
 vec<T, N> select(vec<int, N> s, vec<T, N> a, vec<T, N> b) {
     vec<T, N> ret;
-    for (int i = 0; i < N; i++) {
-        ret[i] = s[i] ? a[i] : b[i];
+
+    if constexpr (N == 1) {
+        ret[0] = s[0] ? b[0] : a[0];
+    } else if constexpr (N == 2) {
+        ret[0] = s[0] ? b[0] : a[0];
+        ret[1] = s[1] ? b[1] : a[1];
+    } else if constexpr (N == 3) {
+        ret[0] = s[0] ? b[0] : a[0];
+        ret[1] = s[1] ? b[1] : a[1];
+        ret[2] = s[2] ? b[2] : a[2];
+    } else if constexpr (N == 4) {
+        ret[0] = s[0] ? b[0] : a[0];
+        ret[1] = s[1] ? b[1] : a[1];
+        ret[2] = s[2] ? b[2] : a[2];
+        ret[3] = s[3] ? b[3] : a[3];
     }
+
     return ret;
 }
 
@@ -351,25 +391,36 @@ vec<T, N> select(vec<int, N> s, vec<T, N> a, vec<T, N> b) {
 ///
 template <class T, size_t N>
 vec<T, N> min(vec<T, N> const& a, vec<T, N> const& b) {
+    static_assert(N > 0 and N < 5);
     vec<T, N> ret;
     using namespace vector_detail;
     if constexpr (N == 1) {
-        ret.x = cmin(a.x, b.x);
+        return vec<T, N>{ cmin(a.x, b.x) };
     } else if constexpr (N == 2) {
-        ret.x = cmin(a.x, b.x);
-        ret.y = cmin(a.y, b.y);
+        return vec<T, N>{ cmin(a.x, b.x), cmin(a.y, b.y) };
     } else if constexpr (N == 3) {
-        ret.x = cmin(a.x, b.x);
-        ret.y = cmin(a.y, b.y);
-        ret.z = cmin(a.z, b.z);
+        return vec<T, N>{ cmin(a.x, b.x), cmin(a.y, b.y), cmin(a.z, b.z) };
     } else if constexpr (N == 4) {
-        ret.x = cmin(a.x, b.x);
-        ret.y = cmin(a.y, b.y);
-        ret.z = cmin(a.z, b.z);
-        ret.w = cmin(a.w, b.w);
+        return vec<T, N>{
+            cmin(a.x, b.x), cmin(a.y, b.y), cmin(a.z, b.z), cmin(a.w, b.w)
+        };
     }
     return ret;
 }
+
+inline vec2 min(vec2 const& a, vec2 const& b) {
+    using namespace vector_detail;
+    auto tmp = _mm_min_ps(v2to4(a), v2to4(b));
+    return v4to2(tmp);
+}
+
+inline vec3 min(vec3 const& a, vec3 const& b) {
+    using namespace vector_detail;
+    auto tmp = _mm_min_ps(v3to4(a), v3to4(b));
+    return v4to3(tmp);
+}
+
+inline vec4 min(vec4 const& a, vec4 const& b) { return _mm_min_ps(a, b); }
 
 ///
 /// \brief Compute the component-wise max between two vectors.
@@ -395,6 +446,20 @@ vec<T, N> max(vec<T, N> const& a, vec<T, N> const& b) {
     }
     return ret;
 }
+
+inline vec2 max(vec2 const& a, vec2 const& b) {
+    using namespace vector_detail;
+    auto tmp = _mm_max_ps(v2to4(a), v2to4(b));
+    return v4to2(tmp);
+}
+
+inline vec3 max(vec3 const& a, vec3 const& b) {
+    using namespace vector_detail;
+    auto tmp = _mm_max_ps(v3to4(a), v3to4(b));
+    return v4to3(tmp);
+}
+
+inline vec4 max(vec4 const& a, vec4 const& b) { return _mm_max_ps(a, b); }
 
 ///
 /// \brief Compute the min between all components of a vector.
@@ -448,6 +513,46 @@ T component_sum(vec<T, N> const& a) {
 }
 
 ///
+/// \brief Round the vector component-wise.
+///
+template <class T, size_t N>
+vec<T, N> round(vec<T, N> const& a) {
+    vec<T, N> ret;
+    using namespace vector_detail;
+    using namespace std;
+    if constexpr (N == 1) {
+        ret.x = round(a.x);
+    } else if constexpr (N == 2) {
+        ret.x = round(a.x);
+        ret.y = round(a.y);
+    } else if constexpr (N == 3) {
+        ret.x = round(a.x);
+        ret.y = round(a.y);
+        ret.z = round(a.z);
+    } else if constexpr (N == 4) {
+        ret.x = round(a.x);
+        ret.y = round(a.y);
+        ret.z = round(a.z);
+        ret.w = round(a.w);
+    }
+    return ret;
+}
+
+inline vec2 round(vec2 const& a) {
+    using namespace vector_detail;
+    return v4to2(_mm_round_ps(v2to4(a), _MM_FROUND_TO_NEAREST_INT));
+}
+
+inline vec3 round(vec3 const& a) {
+    using namespace vector_detail;
+    return v4to3(_mm_round_ps(v3to4(a), _MM_FROUND_TO_NEAREST_INT));
+}
+
+inline vec4 round(vec4 const& a) {
+    return _mm_round_ps(a, _MM_FROUND_TO_NEAREST_INT);
+}
+
+///
 /// \brief Compute the absolute value component-wise, of a vector.
 ///
 template <class T, size_t N>
@@ -470,6 +575,20 @@ vec<T, N> abs(vec<T, N> const& a) {
         ret.w = cabs(a.w);
     }
     return ret;
+}
+
+inline vec4 abs(vec4 const& a) {
+    return _mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF)));
+}
+
+inline vec3 abs(vec3 const& a) {
+    using namespace vector_detail;
+    return v4to3(abs(v3to4(a)));
+}
+
+inline vec2 abs(vec2 const& a) {
+    using namespace vector_detail;
+    return v4to2(abs(v2to4(a)));
 }
 
 ///
@@ -497,6 +616,17 @@ vec<T, N> floor(vec<T, N> const& a) {
     return ret;
 }
 
+inline vec4 floor(vec4 const& a) { return _mm_floor_ps(a); }
+inline vec3 floor(vec3 const& a) {
+    using namespace vector_detail;
+    return v4to3(floor(v3to4(a)));
+}
+
+inline vec2 floor(vec2 const& a) {
+    using namespace vector_detail;
+    return v4to2(floor(v2to4(a)));
+}
+
 ///
 /// \brief Compute the ceil for each component of a vector
 ///
@@ -522,16 +652,27 @@ vec<T, N> ceil(vec<T, N> const& a) {
     return ret;
 }
 
+inline vec4 ceil(vec4 const& a) { return _mm_ceil_ps(a); }
+inline vec3 ceil(vec3 const& a) {
+    using namespace vector_detail;
+    return v4to3(ceil(v3to4(a)));
+}
+
+inline vec2 ceil(vec2 const& a) {
+    using namespace vector_detail;
+    return v4to2(ceil(v2to4(a)));
+}
+
+// Clamp =======================================================================
+
 ///
 /// \brief Compute the floor for each component of a vector
 ///
 template <class T, size_t N>
 vec<T, N>
 clamp(vec<T, N> const& x, vec<T, N> const& min_val, vec<T, N> const& max_val) {
-    vec<T, N> ret = select(x < min_val, min_val, x);
-    return select(ret > max_val, max_val, ret);
+    return max(min(x, max_val), min_val);
 }
-
 
 template <class T, size_t N>
 vec<T, N> clamp(vec<T, N> const& x, T const& min_val, T const& max_val) {
@@ -540,6 +681,8 @@ vec<T, N> clamp(vec<T, N> const& x, T const& min_val, T const& max_val) {
 
     return clamp(x, lmin, lmax);
 }
+
+// Mix =========================================================================
 
 template <class T, size_t N>
 vec<T, N> mix(vec<T, N> const& a, vec<T, N> const& b, bool t) {
