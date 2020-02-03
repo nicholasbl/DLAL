@@ -167,11 +167,11 @@ inline auto transform_inverse(mat4 const& m) {
 
     mat4 ret;
 
-    __m128 t0 = extract_a(m[0], m[1]);
-    __m128 t1 = extract_b(m[0], m[1]);
-    ret[0]    = shuffle<0, 2, 4, 7>(t0, m[2]);
-    ret[1]    = shuffle<1, 3, 5, 7>(t0, m[2]);
-    ret[2]    = shuffle<0, 2, 6, 7>(t1, m[2]);
+    vec4 t0 = extract_a(m[0], m[1]);
+    vec4 t1 = extract_b(m[0], m[1]);
+    ret[0]  = SHUFFLE(t0, m[2], 0, 2, 4, 7);
+    ret[1]  = SHUFFLE(t0, m[2], 1, 3, 5, 7);
+    ret[2]  = SHUFFLE(t1, m[2], 0, 2, 6, 7);
 
     __m128 size_sqr = ret[0] * ret[0];
     size_sqr += ret[1] * ret[1];
@@ -206,8 +206,8 @@ inline auto inverse(mat4 const& m) {
     vec4 const D = extract_b(m[2], m[3]);
 
     vec4 const det_sub =
-        (shuffle<0, 2, 4, 6>(m[0], m[2]) * shuffle<1, 3, 5, 7>(m[1], m[3])) -
-        (shuffle<1, 3, 5, 7>(m[0], m[2]) * shuffle<0, 2, 4, 6>(m[1], m[3]));
+        (SHUFFLE(m[0], m[2], 0, 2, 4, 6) * SHUFFLE(m[1], m[3], 1, 3, 5, 7)) -
+        (SHUFFLE(m[0], m[2], 1, 3, 5, 7) * SHUFFLE(m[1], m[3], 0, 2, 4, 6));
     vec4 const det_A = det_sub.xxxx;
     vec4 const det_B = det_sub.yyyy;
     vec4 const det_C = det_sub.zzzz;
@@ -237,10 +237,10 @@ inline auto inverse(mat4 const& m) {
     W = (W * i_det_M);
 
     mat4 ret;
-    ret[0] = shuffle<3, 1, 7, 5>(X, Y);
-    ret[1] = shuffle<2, 0, 6, 4>(X, Y);
-    ret[2] = shuffle<3, 1, 7, 5>(Z, W);
-    ret[3] = shuffle<2, 0, 6, 4>(Z, W);
+    ret[0] = SHUFFLE(X, Y, 3, 1, 7, 5);
+    ret[1] = SHUFFLE(X, Y, 2, 0, 6, 4);
+    ret[2] = SHUFFLE(Z, W, 3, 1, 7, 5);
+    ret[3] = SHUFFLE(Z, W, 2, 0, 6, 4);
 
     return ret;
 }

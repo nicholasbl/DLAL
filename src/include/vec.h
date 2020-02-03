@@ -16,7 +16,15 @@ namespace dct {
 ///
 
 #ifndef __SSE4_1__
-#error> SSE 4.1 Support is required
+#error SSE 4.1 Support is required
+#endif
+
+#ifndef __clang__
+#error Only the CLANG compiler is supported at this time
+#endif
+
+#ifndef __x86_64__
+#warning Only tested on 64 bit archs at this time
 #endif
 
 // Define how OpenCL views true and false
@@ -24,7 +32,8 @@ namespace dct {
 #define VEC_FALSE 0
 
 // We require extended vectors
-static_assert(__has_attribute(ext_vector_type));
+static_assert(__has_attribute(ext_vector_type),
+              "We require extended vector types.");
 
 /// @{
 /// \brief A templated typedef using extended vector types. Storage size is
@@ -82,11 +91,6 @@ namespace vector_detail {
 #define SHUFFLE(A, B, X, Y, Z, W)                                              \
     __builtin_shuffle(A, B, dct::vector_detail::ivec4{ X, Y, Z, W })
 #endif
-
-template <int x, int y = x, int z = x, int w = x>
-__attribute__((always_inline)) auto shuffle(vec4 a, vec4 b) {
-    return SHUFFLE(a, b, x, y, z, w);
-}
 
 // constexpr versions of these common functions
 
