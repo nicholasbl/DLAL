@@ -8,26 +8,33 @@
 
 namespace dct {
 
+///
+/// \brief The quaternion class models a rotation
+///
 template <class T>
 struct quaternion {
     union {
-        vec<T, 4> storage;
+        vec<T, 4> storage; ///< Storage is simd vector
         struct {
-            T x;
-            T y;
-            T z;
-            T w;
+            T x, y, z, w; ///< Basic swizzle
         };
     };
 
 public:
+    /// \brief Initialize quaternion to zero
     quaternion() : storage{ 0, 0, 0, 1 } {}
+
+    /// \brief Initialize quaternion from loose values. W is the scalar.
     quaternion(T x, T y, T z, T w) : storage{ x, y, z, w } {}
+
+    /// \brief Initialize quaternion from vector and scalar.
     quaternion(T w, vec<T, 3> const& v) : storage{ v.x, v.y, v.z, w } {}
+
+    /// \brief Initialize quaternion from a vector; w should be the scalar.
     explicit quaternion(vec<T, 4> const& f) : storage(f) {}
 
-
 public:
+    /// \brief Convert to a vector
     explicit operator vec<T, 4>() const { return storage; }
 };
 

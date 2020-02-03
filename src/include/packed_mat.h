@@ -11,9 +11,13 @@ namespace dct {
 ///
 template <class T, size_t C, size_t R>
 struct packed_mat {
-    using ColumnType  = packed_vector<T, R>;
-    using RowType     = packed_vector<T, C>;
+    using ColumnType = packed_vector<T, R>; ///< The column vector type
+    using RowType    = packed_vector<T, C>; ///< The row vector type
+
+    /// The underlying storage type
     using StorageType = std::array<ColumnType, C>;
+
+    /// Storage as columns
     StorageType storage;
 
     static_assert(sizeof(storage) == (sizeof(T) * C * R));
@@ -23,8 +27,8 @@ public: // Basics
     /// \brief Get the total number of cells
     ///
     constexpr size_t size() { return C * R; }
-    constexpr size_t row_count() { return R; }
-    constexpr size_t column_count() { return C; }
+    constexpr size_t row_count() { return R; }    ///< Count of rows (R)
+    constexpr size_t column_count() { return C; } ///< Count of columns (C)
 
     /// @{
     /// \brief Access a column.
@@ -38,21 +42,24 @@ public:
     /// \brief Initialize all cells to zero
     constexpr packed_mat() : storage({}) {}
 
+    /// \brief Default copy constructor
     constexpr packed_mat(packed_mat const&) = default;
 
-    /// \brief Convert from a non-packed matrix
+    /// \brief Convert from a non-packed matrix. This will try to use a single
+    /// copy if possible.
     constexpr packed_mat(mat<T, C, R> const& other) {
         if constexpr (mat<T, C, R>::is_contiguous) {
-
+            std::copy(data(other),
+                      data(other) + other.size(),
+                      reinterpret_cast<T*>(&storage[0]));
         } else {
             for (size_t c = 0; c < C; c++) {
-                for (size_t r = 0; r < R; r++) {
-                    (*this)[c][r] = other[c][r];
-                }
+                (*this)[c] = other[c];
             }
         }
     }
 
+    /// \brief Create a matrix from an array of values.
     constexpr packed_mat(std::array<float, C * R> const& a) : storage(a) {}
 
     /// \brief Initialize all cells to the given value
@@ -72,11 +79,15 @@ public:
     }
 
 public:
+    /// \brief Default copy assignment
     packed_mat& operator=(packed_mat const& m) = default;
 
 public:
+    /// @{
+    /// \brief Access the underlying storage as a contiguous array.
     T*       data() { return storage.data(); }
     T const* data() const { return storage.data(); }
+    /// @}
 };
 
 // Typedefs ====================================================================

@@ -738,189 +738,271 @@ class packed_vector {};
 
 // Vector 1 ====================================================================
 
+/// \brief The basic packed vector class; specialized for 1 component.
 template <class T>
 class packed_vector<T, 1> {
+    /// Storage is a simple array
     using StorageType = std::array<T, 1>;
 
     union {
-        StorageType storage;
+        StorageType storage; ///< Array storage
         struct {
-            T x;
+            T x; ///< Basic swizzle
         };
     };
 
 public: // Basics
+    /// \brief Count of vector components
     constexpr size_t size() { return storage.size(); }
 
+    /// @{
+    /// Access a component by index
     constexpr T&       operator[](size_t i) { return storage[i]; }
     constexpr T const& operator[](size_t i) const { return storage[i]; }
+    /// @}
 
 public:
     /// \brief Initialize all elements to zero
     constexpr packed_vector() : storage() {}
+
+    /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
 
     /// \brief Initialize all elements to the provided value
     constexpr packed_vector(T _) { storage.fill(_); }
+
+    /// \brief Construct from a std::array
     constexpr packed_vector(StorageType st) : storage(st) {}
 
+    /// \brief Construct from a non-packed vector
     constexpr packed_vector(vec<T, 1> simd) : x(simd.x) {}
 
+    /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
+    /// \brief Convert to non-packed vector
     operator vec<T, 1>() const { return vec<T, 1>{ x }; }
 
 public:
+    /// @{
+    /// \brief Access the underlying storage as a contiguous array.
     T*       data() { return storage.data(); }
     T const* data() const { return storage.data(); }
+    /// @}
 
+    /// @{
+    /// \brief Iterator support
     constexpr auto begin() { return storage.begin(); }
     constexpr auto begin() const { return storage.begin(); }
     constexpr auto end() { return storage.end(); }
     constexpr auto end() const { return storage.end(); }
+    /// @}
 };
 
 // Vector 2 ====================================================================
 
+/// \brief The basic packed vector class; specialized for 2 components.
 template <class T>
 struct packed_vector<T, 2> {
+    /// Storage is a simple array
     using StorageType = std::array<T, 2>;
 
     union {
-        StorageType storage;
+        StorageType storage; ///< Array storage
         struct {
-            T x, y;
+            T x, y; ///< Basic swizzle
         };
     };
 
 public: // Basics
+    /// \brief Count of vector components
     constexpr size_t size() { return storage.size(); }
 
+    /// @{
+    /// Access a component by index
     constexpr T&       operator[](size_t i) { return storage[i]; }
     constexpr T const& operator[](size_t i) const { return storage[i]; }
+    /// @}
 
 public:
     /// \brief Initialize all elements to zero
     constexpr packed_vector() : storage() {}
+
+    /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
 
     /// \brief Initialize all elements to the provided value
     constexpr packed_vector(T _xy) : packed_vector(_xy, _xy) {}
+
+    /// \brief Construct from a std::array
     constexpr packed_vector(StorageType st) : storage(st) {}
+
+    /// \brief Construct from loose values
     constexpr packed_vector(T _x, T _y) : storage{ _x, _y } {}
 
+    /// \brief Construct from a non-packed vector
     constexpr packed_vector(vec<T, 2> simd) : packed_vector(simd.x, simd.y) {}
 
+    /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
+    /// \brief Convert to non-packed vector
     operator vec<T, 2>() const { return vec<T, 2>{ x, y }; }
 
 public:
+    /// @{
+    /// \brief Access the underlying storage as a contiguous array.
     T*       data() { return storage.data(); }
     T const* data() const { return storage.data(); }
+    /// @}
 
+    /// @{
+    /// \brief Iterator support
     constexpr auto begin() { return storage.begin(); }
     constexpr auto begin() const { return storage.begin(); }
     constexpr auto end() { return storage.end(); }
     constexpr auto end() const { return storage.end(); }
+    /// @}
 };
 
 static_assert(sizeof(packed_vector<float, 2>) == sizeof(float) * 2);
 
 // Vector 3 ====================================================================
 
+/// \brief The basic packed vector class; specialized for 3 components.
 template <class T>
 struct packed_vector<T, 3> {
+    /// Storage is a simple array
     using StorageType = std::array<T, 3>;
 
     union {
-        StorageType storage;
+        StorageType storage; ///< Array storage
         struct {
-            T x, y, z;
+            T x, y, z; ///< Basic swizzle
         };
     };
 
 public: // Basics
+    /// \brief Count of vector components
     constexpr size_t size() { return storage.size(); }
 
+    /// @{
+    /// Access a component by index
     constexpr T&       operator[](size_t i) { return storage[i]; }
     constexpr T const& operator[](size_t i) const { return storage[i]; }
+    /// @}
 
 public:
     /// \brief Initialize all elements to zero
     constexpr packed_vector() : storage() {}
+
+    /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
 
     /// \brief Initialize all elements to the provided value
     constexpr packed_vector(T _xyz) : packed_vector(_xyz, _xyz, _xyz) {}
+
+    /// \brief Construct from a std::array
     constexpr packed_vector(StorageType st) : storage(st) {}
+
+    /// \brief Construct from loose values
     constexpr packed_vector(T _x, T _y, T _z) : storage{ _x, _y, _z } {}
 
+    /// \brief Construct from a non-packed vector
     constexpr packed_vector(vec<T, 3> simd)
         : packed_vector(simd.x, simd.y, simd.z) {}
 
+    /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
+    /// \brief Convert to non-packed vector
     operator vec<T, 3>() const { return vec<T, 3>{ x, y, z }; }
 
 public:
+    /// @{
+    /// \brief Access the underlying storage as a contiguous array.
     T*       data() { return storage.data(); }
     T const* data() const { return storage.data(); }
+    /// @}
 
+    /// @{
+    /// \brief Iterator support
     constexpr auto begin() { return storage.begin(); }
     constexpr auto begin() const { return storage.begin(); }
     constexpr auto end() { return storage.end(); }
     constexpr auto end() const { return storage.end(); }
+    /// @}
 };
 
 static_assert(sizeof(packed_vector<float, 3>) == sizeof(float) * 3);
 
 // Vector 4 ====================================================================
 
+/// \brief The basic packed vector class; specialized for 4 components.
 template <class T>
 struct packed_vector<T, 4> {
+    /// Storage is a simple array
     using StorageType = std::array<T, 4>;
 
     union {
-        StorageType storage;
+        StorageType storage; ///< Array storage
         struct {
-            T x, y, z, w;
+            T x, y, z, w; ///< Basic swizzle
         };
     };
 
 public: // Basics
+    /// \brief Count of vector components
     constexpr size_t size() { return storage.size(); }
 
+    /// @{
+    /// Access a component by index
     constexpr T&       operator[](size_t i) { return storage[i]; }
     constexpr T const& operator[](size_t i) const { return storage[i]; }
+    /// @}
 
 public:
     /// \brief Initialize all elements to zero
     constexpr packed_vector() : storage() {}
+
+    /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
 
     /// \brief Initialize all elements to the provided value
     constexpr packed_vector(T _xyzw)
         : packed_vector(_xyzw, _xyzw, _xyzw, _xyzw) {}
+
+    /// \brief Construct from a std::array
     constexpr packed_vector(StorageType st) : storage(st) {}
+
+    /// \brief Construct from loose values
     constexpr packed_vector(T _x, T _y, T _z, T _w)
         : storage{ _x, _y, _z, _w } {}
 
+    /// \brief Construct from a non-packed vector
     constexpr packed_vector(vec<T, 4> simd)
         : packed_vector(simd.x, simd.y, simd.z, simd.w) {}
 
+    /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
+    /// \brief Convert to non-packed vector
     operator vec<T, 4>() const { return vec<T, 4>{ x, y, z, w }; }
 
 public:
+    /// @{
+    /// \brief Access the underlying storage as a contiguous array.
     T*       data() { return storage.data(); }
     T const* data() const { return storage.data(); }
+    /// @}
 
+    /// @{
+    /// \brief Iterator support
     constexpr auto begin() { return storage.begin(); }
     constexpr auto begin() const { return storage.begin(); }
     constexpr auto end() { return storage.end(); }
     constexpr auto end() const { return storage.end(); }
+    /// @}
 };
 
 // Vector Typedefs =============================================================
@@ -1328,6 +1410,10 @@ constexpr auto get_identity_storage() {
 
 namespace dct {
 
+///
+/// \brief The identity_t struct allows the user to select the identity
+/// constructor. Use dct::identity to initialize a new matrix with the identity.
+///
 struct identity_t {
 } static const identity;
 
@@ -1340,11 +1426,13 @@ struct identity_t {
 ///
 template <class T, size_t C, size_t R>
 struct mat {
-    using ColumnType = vec<T, R>;
-    using RowType    = vec<T, C>;
+    using ColumnType = vec<T, R>; ///< The column vector type
+    using RowType    = vec<T, C>; ///< The row vector type
 
+    /// The underlying storage type
     using StorageType = std::array<ColumnType, C>;
 
+    /// Storage as columns
     StorageType storage;
 
     /// Indicates if the type uses contiguous storage, which can speed up
@@ -1357,8 +1445,8 @@ public: // Basics
     /// \brief Get the total number of cells
     ///
     constexpr size_t size() { return C * R; }
-    constexpr size_t row_count() { return R; }
-    constexpr size_t column_count() { return C; }
+    constexpr size_t row_count() { return R; }    ///< Count of rows (R)
+    constexpr size_t column_count() { return C; } ///< Count of columns (C)
 
     /// @{
     /// \brief Access a column.
@@ -1376,8 +1464,13 @@ public:
     constexpr mat(identity_t)
         : storage(matrix_detail::get_identity_storage<T, C, R>()) {}
 
+    /// \brief Default copy behavior.
     constexpr mat(mat const&) = default;
 
+    /// \brief Construct a new matrix using the given value array. A single
+    /// copy will be performed if possible. It may be faster to construct the
+    /// matrix with either the storage constructor, or build a default matrix
+    /// and then set columns.
     constexpr mat(std::array<float, C * R> const& a) {
         if constexpr (is_contiguous) {
             std::copy(a.data(),
@@ -1395,6 +1488,7 @@ public:
     /// \brief Initialize all cells to the given value
     constexpr mat(T value) { storage.fill(value); }
 
+    /// \brief Initialize the matrix with an array of columns.
     constexpr mat(StorageType pack) : storage(pack) {}
 
     /// \brief Initialize values from a differently sized matrix, zeros
@@ -1423,6 +1517,7 @@ public:
     }
 
 public:
+    /// \brief Default copy assignment.
     mat& operator=(mat const& m) = default;
 
 
@@ -1781,26 +1876,33 @@ bool is_equal(mat<T, C, R> const& a, mat<T, C, R> const& b, T limit) {
 
 namespace dct {
 
+///
+/// \brief The quaternion class models a rotation
+///
 template <class T>
 struct quaternion {
     union {
-        vec<T, 4> storage;
+        vec<T, 4> storage; ///< Storage is simd vector
         struct {
-            T x;
-            T y;
-            T z;
-            T w;
+            T x, y, z, w; ///< Basic swizzle
         };
     };
 
 public:
+    /// \brief Initialize quaternion to zero
     quaternion() : storage{ 0, 0, 0, 1 } {}
+
+    /// \brief Initialize quaternion from loose values. W is the scalar.
     quaternion(T x, T y, T z, T w) : storage{ x, y, z, w } {}
+
+    /// \brief Initialize quaternion from vector and scalar.
     quaternion(T w, vec<T, 3> const& v) : storage{ v.x, v.y, v.z, w } {}
+
+    /// \brief Initialize quaternion from a vector; w should be the scalar.
     explicit quaternion(vec<T, 4> const& f) : storage(f) {}
 
-
 public:
+    /// \brief Convert to a vector
     explicit operator vec<T, 4>() const { return storage; }
 };
 
@@ -2068,9 +2170,13 @@ namespace dct {
 ///
 template <class T, size_t C, size_t R>
 struct packed_mat {
-    using ColumnType  = packed_vector<T, R>;
-    using RowType     = packed_vector<T, C>;
+    using ColumnType = packed_vector<T, R>; ///< The column vector type
+    using RowType    = packed_vector<T, C>; ///< The row vector type
+
+    /// The underlying storage type
     using StorageType = std::array<ColumnType, C>;
+
+    /// Storage as columns
     StorageType storage;
 
     static_assert(sizeof(storage) == (sizeof(T) * C * R));
@@ -2080,8 +2186,8 @@ public: // Basics
     /// \brief Get the total number of cells
     ///
     constexpr size_t size() { return C * R; }
-    constexpr size_t row_count() { return R; }
-    constexpr size_t column_count() { return C; }
+    constexpr size_t row_count() { return R; }    ///< Count of rows (R)
+    constexpr size_t column_count() { return C; } ///< Count of columns (C)
 
     /// @{
     /// \brief Access a column.
@@ -2095,21 +2201,24 @@ public:
     /// \brief Initialize all cells to zero
     constexpr packed_mat() : storage({}) {}
 
+    /// \brief Default copy constructor
     constexpr packed_mat(packed_mat const&) = default;
 
-    /// \brief Convert from a non-packed matrix
+    /// \brief Convert from a non-packed matrix. This will try to use a single
+    /// copy if possible.
     constexpr packed_mat(mat<T, C, R> const& other) {
         if constexpr (mat<T, C, R>::is_contiguous) {
-
+            std::copy(data(other),
+                      data(other) + other.size(),
+                      reinterpret_cast<T*>(&storage[0]));
         } else {
             for (size_t c = 0; c < C; c++) {
-                for (size_t r = 0; r < R; r++) {
-                    (*this)[c][r] = other[c][r];
-                }
+                (*this)[c] = other[c];
             }
         }
     }
 
+    /// \brief Create a matrix from an array of values.
     constexpr packed_mat(std::array<float, C * R> const& a) : storage(a) {}
 
     /// \brief Initialize all cells to the given value
@@ -2129,11 +2238,15 @@ public:
     }
 
 public:
+    /// \brief Default copy assignment
     packed_mat& operator=(packed_mat const& m) = default;
 
 public:
+    /// @{
+    /// \brief Access the underlying storage as a contiguous array.
     T*       data() { return storage.data(); }
     T const* data() const { return storage.data(); }
+    /// @}
 };
 
 // Typedefs ====================================================================
@@ -2525,9 +2638,17 @@ class TMatrix {
 public:
     /// \brief Create a default transformation matrix (the identity)
     TMatrix() = default;
+
+    /// \brief Create a matrix with the given rotation and scaling matrix
     explicit TMatrix(mat3 const& f) : m_mat(f) { m_mat[3][3] = 1; }
+
+    /// \brief Create a transformation matrix using a provided 4x4 mat.
     explicit TMatrix(mat4 const& f) : m_mat(f) {}
+
+    /// \brief Create a matrix with a rotation.
     explicit TMatrix(quat const& q) : m_mat(mat4_from_unit_quaternion(q)) {}
+
+    /// \brief Create a matrix with an array of values
     explicit TMatrix(std::array<float, 16> const& f) : m_mat(f) {}
 
 public: // setters
@@ -2587,6 +2708,7 @@ public: // operation
     /// \brief Transform a vec4.
     vec4 operator*(vec4 const&)const;
 
+    /// \brief Add the transformations from another TMatrix
     TMatrix operator*(TMatrix const&)const;
 
     /// \brief Transform a vector, without translation
@@ -2598,12 +2720,20 @@ public: // operation
 
 
 public: // access
+    /// Convert to a rotation and scale only matrix
     explicit operator mat3() const;
+
+    /// Convert to a mat4 (no-op)
     explicit operator mat4() const;
+
+    /// Convert to a contiguous array
     explicit operator std::array<float, 16>() const;
 
+    /// @{
+    /// \brief Access the underlying storage as a contiguous array.
     float*       data();
     float const* data() const;
+    /// @}
 };
 
 ///

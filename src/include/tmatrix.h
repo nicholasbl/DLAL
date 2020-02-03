@@ -26,9 +26,17 @@ class TMatrix {
 public:
     /// \brief Create a default transformation matrix (the identity)
     TMatrix() = default;
+
+    /// \brief Create a matrix with the given rotation and scaling matrix
     explicit TMatrix(mat3 const& f) : m_mat(f) { m_mat[3][3] = 1; }
+
+    /// \brief Create a transformation matrix using a provided 4x4 mat.
     explicit TMatrix(mat4 const& f) : m_mat(f) {}
+
+    /// \brief Create a matrix with a rotation.
     explicit TMatrix(quat const& q) : m_mat(mat4_from_unit_quaternion(q)) {}
+
+    /// \brief Create a matrix with an array of values
     explicit TMatrix(std::array<float, 16> const& f) : m_mat(f) {}
 
 public: // setters
@@ -88,6 +96,7 @@ public: // operation
     /// \brief Transform a vec4.
     vec4 operator*(vec4 const&)const;
 
+    /// \brief Add the transformations from another TMatrix
     TMatrix operator*(TMatrix const&)const;
 
     /// \brief Transform a vector, without translation
@@ -99,12 +108,20 @@ public: // operation
 
 
 public: // access
+    /// Convert to a rotation and scale only matrix
     explicit operator mat3() const;
+
+    /// Convert to a mat4 (no-op)
     explicit operator mat4() const;
+
+    /// Convert to a contiguous array
     explicit operator std::array<float, 16>() const;
 
+    /// @{
+    /// \brief Access the underlying storage as a contiguous array.
     float*       data();
     float const* data() const;
+    /// @}
 };
 
 ///

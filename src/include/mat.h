@@ -8,6 +8,10 @@
 
 namespace dct {
 
+///
+/// \brief The identity_t struct allows the user to select the identity
+/// constructor. Use dct::identity to initialize a new matrix with the identity.
+///
 struct identity_t {
 } static const identity;
 
@@ -20,11 +24,13 @@ struct identity_t {
 ///
 template <class T, size_t C, size_t R>
 struct mat {
-    using ColumnType = vec<T, R>;
-    using RowType    = vec<T, C>;
+    using ColumnType = vec<T, R>; ///< The column vector type
+    using RowType    = vec<T, C>; ///< The row vector type
 
+    /// The underlying storage type
     using StorageType = std::array<ColumnType, C>;
 
+    /// Storage as columns
     StorageType storage;
 
     /// Indicates if the type uses contiguous storage, which can speed up
@@ -37,8 +43,8 @@ public: // Basics
     /// \brief Get the total number of cells
     ///
     constexpr size_t size() { return C * R; }
-    constexpr size_t row_count() { return R; }
-    constexpr size_t column_count() { return C; }
+    constexpr size_t row_count() { return R; }    ///< Count of rows (R)
+    constexpr size_t column_count() { return C; } ///< Count of columns (C)
 
     /// @{
     /// \brief Access a column.
@@ -56,8 +62,13 @@ public:
     constexpr mat(identity_t)
         : storage(matrix_detail::get_identity_storage<T, C, R>()) {}
 
+    /// \brief Default copy behavior.
     constexpr mat(mat const&) = default;
 
+    /// \brief Construct a new matrix using the given value array. A single
+    /// copy will be performed if possible. It may be faster to construct the
+    /// matrix with either the storage constructor, or build a default matrix
+    /// and then set columns.
     constexpr mat(std::array<float, C * R> const& a) {
         if constexpr (is_contiguous) {
             std::copy(a.data(),
@@ -75,6 +86,7 @@ public:
     /// \brief Initialize all cells to the given value
     constexpr mat(T value) { storage.fill(value); }
 
+    /// \brief Initialize the matrix with an array of columns.
     constexpr mat(StorageType pack) : storage(pack) {}
 
     /// \brief Initialize values from a differently sized matrix, zeros
@@ -103,6 +115,7 @@ public:
     }
 
 public:
+    /// \brief Default copy assignment.
     mat& operator=(mat const& m) = default;
 
 
