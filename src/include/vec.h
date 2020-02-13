@@ -177,37 +177,32 @@ inline vec<int, 4> new_vec(bool a, bool b, bool c, bool d) {
 
 // Operations ==================================================================
 
+
 ///
-/// \brief Generic dot product.
+/// \brief Dot product specialization for arb vec2
 ///
-template <class T, int N>
-T dot(vec<T, N> const& a, vec<T, N> const& b) {
-    static_assert(N > 0 and N <= 4);
-    T ret;
-    if constexpr (N == 1) {
-        ret = a.x * b.x;
-    } else if constexpr (N == 2) {
-        ret = a.x * b.x;
-        ret += a.y * b.y;
-    } else if constexpr (N == 3) {
-        ret = a.x * b.x;
-        ret += a.y * b.y;
-        ret += a.z * b.z;
-    } else if constexpr (N == 4) {
-        ret = a.x * b.x;
-        ret += a.y * b.y;
-        ret += a.z * b.z;
-        ret += a.w * b.w;
-    }
-    return ret;
+template <class T>
+float dot(vec<T, 2> a, vec<T, 2> b) {
+    auto r = a * b;
+    return r.x + r.y;
 }
 
 ///
-/// \brief Dot product specialization for vec3
+/// \brief Dot product specialization for arb vec3
 ///
-inline float dot(vec3 a, vec3 b) {
+template <class T>
+float dot(vec<T, 3> a, vec<T, 3> b) {
     auto r = a * b;
     return r.x + r.y + r.z;
+}
+
+///
+/// \brief Dot product specialization for arb vec3
+///
+template <class T>
+float dot(vec<T, 4> a, vec<T, 4> b) {
+    auto r = a * b;
+    return r.x + r.y + r.z + r.w;
 }
 
 ///
@@ -242,7 +237,8 @@ inline vec4 dot_vec(vec4 a, vec4 b) {
 ///
 template <class T>
 vec<T, 3> cross(vec<T, 3> const& a, vec<T, 3> const& b) {
-    return (a.yzx * b.zxy) - (b.yzx * a.zxy);
+    // Improved version by http://threadlocalmutex.com/?p=8
+    return (a * b.yzx - a.yzx * b).yzx;
 }
 
 ///

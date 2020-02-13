@@ -63,20 +63,21 @@ quaternion<T> operator*(quaternion<T> const& q, T scalar) {
 
 template <class T>
 quaternion<T> operator*(quaternion<T> const& q, quaternion<T> const& r) {
+    static constexpr dct::vec<T, 4> mask1{ 1, 1, -1, -1 };
+    static constexpr dct::vec<T, 4> mask2{ -1, 1, 1, -1 };
+    static constexpr dct::vec<T, 4> mask3{ 1, -1, 1, -1 };
 
-    quaternion<T> ret;
+    dct::vec<T, 4> p1 = r.storage.w * q.storage;
+    dct::vec<T, 4> p2 = mask1 * r.storage.x * q.storage.wzyx;
+    dct::vec<T, 4> p3 = mask2 * r.storage.y * q.storage.zwxy;
+    dct::vec<T, 4> p4 = mask3 * r.storage.z * q.storage.yxwz;
 
-    ret.x = q.w * r.x + q.x * r.w + q.y * r.z - q.z * r.y;
-    ret.y = q.w * r.y + q.y * r.w + q.z * r.x - q.x * r.z;
-    ret.z = q.w * r.z + q.z * r.w + q.x * r.y - q.y * r.x;
-    ret.w = q.w * r.w - q.x * r.x - q.y * r.y - q.z * r.z;
-
-    return ret;
+    return dct::quat(p1 + p2 + p3 + p4);
 }
 
 template <class T>
 vec<T, 3> operator*(quaternion<T> const& q, vec<T, 3> const& v) {
-    vec<T, 3> const lqv{ q.x, q.y, q.z };
+    vec<T, 3> const lqv = q.storage.xyz;
     vec<T, 3> const uv(cross(lqv, v));
     vec<T, 3> const uuv(cross(lqv, uv));
 
@@ -136,41 +137,25 @@ mat<T, 3, 3> mat3_from_unit_quaternion(quaternion<T> const& q) {
     ret[2][0] = two * (qxz + qwy);
     ret[2][1] = two * (qyz - qwx);
     ret[2][2] = one - two * (qxx + qyy);
-
     return ret;
 }
 
 /// \brief Convert a UNIT quaternion to a mat3
 template <class T>
 mat<T, 4, 4> mat4_from_unit_quaternion(quaternion<T> const& q) {
+    auto m3 = mat3_from_unit_quaternion(q);
 
-    T const qxx(q.x * q.x);
-    T const qyy(q.y * q.y);
-    T const qzz(q.z * q.z);
-    T const qxz(q.x * q.z);
-    T const qxy(q.x * q.y);
-    T const qyz(q.y * q.z);
-    T const qwx(q.w * q.x);
-    T const qwy(q.w * q.y);
-    T const qwz(q.w * q.z);
+    mat<T, 4, 4> ret;
 
-    T const one(1);
-    T const two(2);
+    ret[0] = vector_detail::v3to4(m3[0]);
+    ret[1] = vector_detail::v3to4(m3[1]);
+    ret[2] = vector_detail::v3to4(m3[2]);
+    ret[3] = vec4{ 0, 0, 0, 1 };
 
-    mat<T, 4, 4> ret(0);
-    ret[0][0] = one - two * (qyy + qzz);
-    ret[0][1] = two * (qxy + qwz);
-    ret[0][2] = two * (qxz - qwy);
+    ret[0].w = 0;
+    ret[1].w = 0;
+    ret[2].w = 0;
 
-    ret[1][0] = two * (qxy - qwz);
-    ret[1][1] = one - two * (qxx + qzz);
-    ret[1][2] = two * (qyz + qwx);
-
-    ret[2][0] = two * (qxz + qwy);
-    ret[2][1] = two * (qyz - qwx);
-    ret[2][2] = one - two * (qxx + qyy);
-
-    ret[3][3] = one;
     return ret;
 }
 

@@ -133,7 +133,11 @@ TEST_CASE("quaternion") {
 
     SUBCASE("Conversion") {
         REQUIRE(quat_check<float>({ 1, -1, 3, 3 }, [](auto q1, auto r1) {
-            return is_same(mat3_from_unit_quaternion(q1), glm::mat3_cast(r1));
+            auto a   = mat3_from_unit_quaternion(q1);
+            auto b   = glm::mat3_cast(r1);
+            bool ret = is_same(a, b);
+
+            return ret;
         }));
 
         {
