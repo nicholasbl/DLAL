@@ -177,37 +177,32 @@ inline vec<int, 4> new_vec(bool a, bool b, bool c, bool d) {
 
 // Operations ==================================================================
 
+
 ///
-/// \brief Generic dot product.
+/// \brief Dot product specialization for arb vec2
 ///
-template <class T, int N>
-T dot(vec<T, N> const& a, vec<T, N> const& b) {
-    static_assert(N > 0 and N <= 4);
-    T ret;
-    if constexpr (N == 1) {
-        ret = a.x * b.x;
-    } else if constexpr (N == 2) {
-        ret = a.x * b.x;
-        ret += a.y * b.y;
-    } else if constexpr (N == 3) {
-        ret = a.x * b.x;
-        ret += a.y * b.y;
-        ret += a.z * b.z;
-    } else if constexpr (N == 4) {
-        ret = a.x * b.x;
-        ret += a.y * b.y;
-        ret += a.z * b.z;
-        ret += a.w * b.w;
-    }
-    return ret;
+template <class T>
+float dot(vec<T, 2> a, vec<T, 2> b) {
+    auto r = a * b;
+    return r.x + r.y;
 }
 
 ///
-/// \brief Dot product specialization for vec3
+/// \brief Dot product specialization for arb vec3
 ///
-inline float dot(vec3 a, vec3 b) {
+template <class T>
+float dot(vec<T, 3> a, vec<T, 3> b) {
     auto r = a * b;
     return r.x + r.y + r.z;
+}
+
+///
+/// \brief Dot product specialization for arb vec3
+///
+template <class T>
+float dot(vec<T, 4> a, vec<T, 4> b) {
+    auto r = a * b;
+    return r.x + r.y + r.z + r.w;
 }
 
 ///
@@ -242,7 +237,8 @@ inline vec4 dot_vec(vec4 a, vec4 b) {
 ///
 template <class T>
 vec<T, 3> cross(vec<T, 3> const& a, vec<T, 3> const& b) {
-    return (a.yzx * b.zxy) - (b.yzx * a.zxy);
+    // Improved version by http://threadlocalmutex.com/?p=8
+    return (a * b.yzx - a.yzx * b).yzx;
 }
 
 ///
@@ -1007,6 +1003,8 @@ public:
 
 // Vector Typedefs =============================================================
 
+using float16 = __fp16;
+
 using packed_bvec1 = packed_vector<bool, 1>;
 using packed_bvec2 = packed_vector<bool, 2>;
 using packed_bvec3 = packed_vector<bool, 3>;
@@ -1037,10 +1035,40 @@ using packed_vec2 = packed_vector<float, 2>;
 using packed_vec3 = packed_vector<float, 3>;
 using packed_vec4 = packed_vector<float, 4>;
 
+using packed_hvec1 = packed_vector<float16, 1>;
+using packed_hvec2 = packed_vector<float16, 2>;
+using packed_hvec3 = packed_vector<float16, 3>;
+using packed_hvec4 = packed_vector<float16, 4>;
+
 using packed_dvec1 = packed_vector<double, 1>;
 using packed_dvec2 = packed_vector<double, 2>;
 using packed_dvec3 = packed_vector<double, 3>;
 using packed_dvec4 = packed_vector<double, 4>;
+
+template <size_t N>
+packed_vector<float16, N> half_vector(packed_vector<float, N> f) {
+    static_assert(N > 0 and N <= 4);
+
+    std::array<float16, N> ret;
+
+    if constexpr (N == 1) {
+        ret[0] = f[0];
+    } else if constexpr (N == 2) {
+        ret[0] = f[0];
+        ret[1] = f[1];
+    } else if constexpr (N == 3) {
+        ret[0] = f[0];
+        ret[1] = f[1];
+        ret[2] = f[2];
+    } else if constexpr (N == 4) {
+        ret[0] = f[0];
+        ret[1] = f[1];
+        ret[2] = f[2];
+        ret[3] = f[3];
+    }
+
+    return ret;
+}
 
 
 } // namespace dct
@@ -1931,20 +1959,21 @@ quaternion<T> operator*(quaternion<T> const& q, T scalar) {
 
 template <class T>
 quaternion<T> operator*(quaternion<T> const& q, quaternion<T> const& r) {
+    static constexpr dct::vec<T, 4> mask1{ 1, 1, -1, -1 };
+    static constexpr dct::vec<T, 4> mask2{ -1, 1, 1, -1 };
+    static constexpr dct::vec<T, 4> mask3{ 1, -1, 1, -1 };
 
-    quaternion<T> ret;
+    dct::vec<T, 4> p1 = r.storage.w * q.storage;
+    dct::vec<T, 4> p2 = mask1 * r.storage.x * q.storage.wzyx;
+    dct::vec<T, 4> p3 = mask2 * r.storage.y * q.storage.zwxy;
+    dct::vec<T, 4> p4 = mask3 * r.storage.z * q.storage.yxwz;
 
-    ret.x = q.w * r.x + q.x * r.w + q.y * r.z - q.z * r.y;
-    ret.y = q.w * r.y + q.y * r.w + q.z * r.x - q.x * r.z;
-    ret.z = q.w * r.z + q.z * r.w + q.x * r.y - q.y * r.x;
-    ret.w = q.w * r.w - q.x * r.x - q.y * r.y - q.z * r.z;
-
-    return ret;
+    return dct::quat(p1 + p2 + p3 + p4);
 }
 
 template <class T>
 vec<T, 3> operator*(quaternion<T> const& q, vec<T, 3> const& v) {
-    vec<T, 3> const lqv{ q.x, q.y, q.z };
+    vec<T, 3> const lqv = q.storage.xyz;
     vec<T, 3> const uv(cross(lqv, v));
     vec<T, 3> const uuv(cross(lqv, uv));
 
@@ -2004,41 +2033,25 @@ mat<T, 3, 3> mat3_from_unit_quaternion(quaternion<T> const& q) {
     ret[2][0] = two * (qxz + qwy);
     ret[2][1] = two * (qyz - qwx);
     ret[2][2] = one - two * (qxx + qyy);
-
     return ret;
 }
 
 /// \brief Convert a UNIT quaternion to a mat3
 template <class T>
 mat<T, 4, 4> mat4_from_unit_quaternion(quaternion<T> const& q) {
+    auto m3 = mat3_from_unit_quaternion(q);
 
-    T const qxx(q.x * q.x);
-    T const qyy(q.y * q.y);
-    T const qzz(q.z * q.z);
-    T const qxz(q.x * q.z);
-    T const qxy(q.x * q.y);
-    T const qyz(q.y * q.z);
-    T const qwx(q.w * q.x);
-    T const qwy(q.w * q.y);
-    T const qwz(q.w * q.z);
+    mat<T, 4, 4> ret;
 
-    T const one(1);
-    T const two(2);
+    ret[0] = vector_detail::v3to4(m3[0]);
+    ret[1] = vector_detail::v3to4(m3[1]);
+    ret[2] = vector_detail::v3to4(m3[2]);
+    ret[3] = vec4{ 0, 0, 0, 1 };
 
-    mat<T, 4, 4> ret(0);
-    ret[0][0] = one - two * (qyy + qzz);
-    ret[0][1] = two * (qxy + qwz);
-    ret[0][2] = two * (qxz - qwy);
+    ret[0].w = 0;
+    ret[1].w = 0;
+    ret[2].w = 0;
 
-    ret[1][0] = two * (qxy - qwz);
-    ret[1][1] = one - two * (qxx + qzz);
-    ret[1][2] = two * (qyz + qwx);
-
-    ret[2][0] = two * (qxz + qwy);
-    ret[2][1] = two * (qyz - qwx);
-    ret[2][2] = one - two * (qxx + qyy);
-
-    ret[3][3] = one;
     return ret;
 }
 

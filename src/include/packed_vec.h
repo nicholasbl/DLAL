@@ -285,6 +285,8 @@ public:
 
 // Vector Typedefs =============================================================
 
+using float16 = __fp16;
+
 using packed_bvec1 = packed_vector<bool, 1>;
 using packed_bvec2 = packed_vector<bool, 2>;
 using packed_bvec3 = packed_vector<bool, 3>;
@@ -315,10 +317,40 @@ using packed_vec2 = packed_vector<float, 2>;
 using packed_vec3 = packed_vector<float, 3>;
 using packed_vec4 = packed_vector<float, 4>;
 
+using packed_hvec1 = packed_vector<float16, 1>;
+using packed_hvec2 = packed_vector<float16, 2>;
+using packed_hvec3 = packed_vector<float16, 3>;
+using packed_hvec4 = packed_vector<float16, 4>;
+
 using packed_dvec1 = packed_vector<double, 1>;
 using packed_dvec2 = packed_vector<double, 2>;
 using packed_dvec3 = packed_vector<double, 3>;
 using packed_dvec4 = packed_vector<double, 4>;
+
+template <size_t N>
+packed_vector<float16, N> half_vector(packed_vector<float, N> f) {
+    static_assert(N > 0 and N <= 4);
+
+    std::array<float16, N> ret;
+
+    if constexpr (N == 1) {
+        ret[0] = f[0];
+    } else if constexpr (N == 2) {
+        ret[0] = f[0];
+        ret[1] = f[1];
+    } else if constexpr (N == 3) {
+        ret[0] = f[0];
+        ret[1] = f[1];
+        ret[2] = f[2];
+    } else if constexpr (N == 4) {
+        ret[0] = f[0];
+        ret[1] = f[1];
+        ret[2] = f[2];
+        ret[3] = f[3];
+    }
+
+    return ret;
+}
 
 
 } // namespace dct
