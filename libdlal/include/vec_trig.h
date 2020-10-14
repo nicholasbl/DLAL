@@ -5,7 +5,7 @@
 
 #include <cmath>
 
-namespace dct {
+namespace dlal {
 
 #define VECTOR_OP(OP)                                                          \
     vec<T, N> ret;                                                             \
@@ -39,7 +39,7 @@ namespace dct {
 
 
 template <class T, int N>
-vec<T, N> sqrt(vec<T, N> const& a){ VECTOR_OP(std::sqrt) }
+vec<T, N> sqrt(vec<T, N> const& a) { VECTOR_OP(std::sqrt) }
 
 SPEC_VECTOR_OP(sqrt, _mm_sqrt_ps);
 
@@ -86,6 +86,6 @@ vec<T, N> log(vec<T, N> const& a) {
 #undef VECTOR_OP
 #undef SPEC_VECTOR_OP
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_VECTOR_TRIG_H

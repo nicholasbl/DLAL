@@ -6,7 +6,7 @@
 #include <array>
 #include <cstddef>
 
-namespace dct {
+namespace dlal {
 
 namespace matrix_detail {
 
@@ -15,17 +15,17 @@ namespace matrix_detail {
 ///
 template <int N, class T, int M>
 constexpr vec<T, N> upgrade(vec<T, M> const& v) {
-    constexpr size_t C = vector_detail::cmin(N, M);
+    constexpr size_t C = std::min(N, M);
     static_assert(C <= 4);
     vec<T, N> ret;
     if constexpr (C == 1) {
-        return vec<T, N>{ v.x };
+        return vec<T, N> { v.x };
     } else if constexpr (C == 2) {
-        return vec<T, N>{ v.x, v.y };
+        return vec<T, N> { v.x, v.y };
     } else if constexpr (C == 3) {
-        return vec<T, N>{ v.x, v.y, v.z };
+        return vec<T, N> { v.x, v.y, v.z };
     } else if constexpr (C == 4) {
-        return vec<T, N>{ v.x, v.y, v.z, v.w };
+        return vec<T, N> { v.x, v.y, v.z, v.w };
     }
     return ret;
 }
@@ -36,7 +36,7 @@ constexpr vec<T, N> upgrade(vec<T, M> const& v) {
 ///
 template <int DEST_N, class T, int SRC_N>
 constexpr void overlay(vec<T, SRC_N> const& src, vec<T, DEST_N>& dest) {
-    constexpr size_t LOW_N = vector_detail::cmin(DEST_N, SRC_N);
+    constexpr size_t LOW_N = std::min(DEST_N, SRC_N);
     static_assert(LOW_N <= 4);
 
     if constexpr (SRC_N == DEST_N) {
@@ -203,30 +203,30 @@ vec<T, N> get_identity_vec() {
         return vec<T, N>(0);
         // else construct a vector with a 1 in the right slot
     } else if constexpr (N == 1) {
-        return vec<T, N>{ 1 };
+        return vec<T, N> { 1 };
     } else if constexpr (N == 2) {
         if constexpr (AT == 0) {
-            return vec<T, N>{ 1, 0 };
+            return vec<T, N> { 1, 0 };
         } else if constexpr (AT == 1) {
-            return vec<T, N>{ 0, 1 };
+            return vec<T, N> { 0, 1 };
         }
     } else if constexpr (N == 3) {
         if constexpr (AT == 0) {
-            return vec<T, N>{ 1, 0, 0 };
+            return vec<T, N> { 1, 0, 0 };
         } else if constexpr (AT == 1) {
-            return vec<T, N>{ 0, 1, 0 };
+            return vec<T, N> { 0, 1, 0 };
         } else if constexpr (AT == 2) {
-            return vec<T, N>{ 0, 0, 1 };
+            return vec<T, N> { 0, 0, 1 };
         }
     } else if constexpr (N == 4) {
         if constexpr (AT == 0) {
-            return vec<T, N>{ 1, 0, 0, 0 };
+            return vec<T, N> { 1, 0, 0, 0 };
         } else if constexpr (AT == 1) {
-            return vec<T, N>{ 0, 1, 0, 0 };
+            return vec<T, N> { 0, 1, 0, 0 };
         } else if constexpr (AT == 2) {
-            return vec<T, N>{ 0, 0, 1, 0 };
+            return vec<T, N> { 0, 0, 1, 0 };
         } else if constexpr (AT == 3) {
-            return vec<T, N>{ 0, 0, 0, 1 };
+            return vec<T, N> { 0, 0, 0, 1 };
         }
     }
 }
@@ -261,6 +261,6 @@ constexpr auto get_identity_storage() {
 
 } // namespace matrix_detail
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_MATRIX_DETAIL_H

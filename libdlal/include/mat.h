@@ -6,7 +6,7 @@
 
 #include <xmmintrin.h>
 
-namespace dct {
+namespace dlal {
 
 ///
 /// \brief The identity_t struct allows the user to select the identity
@@ -56,11 +56,11 @@ public: // Basics
 
 public:
     /// \brief Initialize all cells to zero
-    constexpr mat() : storage() {}
+    constexpr mat() : storage() { }
 
     /// \brief Initialize the matrix to the identity.
     constexpr mat(identity_t)
-        : storage(matrix_detail::get_identity_storage<T, C, R>()) {}
+        : storage(matrix_detail::get_identity_storage<T, C, R>()) { }
 
     /// \brief Default copy behavior.
     constexpr mat(mat const&) = default;
@@ -87,7 +87,7 @@ public:
     constexpr mat(T value) { storage.fill(value); }
 
     /// \brief Initialize the matrix with an array of columns.
-    constexpr mat(StorageType pack) : storage(pack) {}
+    constexpr mat(StorageType pack) : storage(pack) { }
 
     /// \brief Initialize values from a differently sized matrix, zeros
     /// otherwise.
@@ -464,6 +464,6 @@ bool is_equal(mat<T, C, R> const& a, mat<T, C, R> const& b, T limit) {
     return is_all(delta < c);
 }
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_MATRIX_H

@@ -7,12 +7,12 @@
 #include <array>
 #include <cmath>
 
-namespace dct {
+namespace dlal {
 
 /// \brief The basic packed vector class; specializations define the 1-4
 /// component cases. These should be used when storage sizes are important.
 template <class T, size_t N>
-class packed_vector {};
+class packed_vector { };
 
 // Vector 1 ====================================================================
 
@@ -41,7 +41,7 @@ public: // Basics
 
 public:
     /// \brief Initialize all elements to zero
-    constexpr packed_vector() : storage() {}
+    constexpr packed_vector() : storage() { }
 
     /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
@@ -50,16 +50,16 @@ public:
     constexpr packed_vector(T _) { storage.fill(_); }
 
     /// \brief Construct from a std::array
-    constexpr packed_vector(StorageType st) : storage(st) {}
+    constexpr packed_vector(StorageType st) : storage(st) { }
 
     /// \brief Construct from a non-packed vector
-    constexpr packed_vector(vec<T, 1> simd) : x(simd.x) {}
+    constexpr packed_vector(vec<T, 1> simd) : x(simd.x) { }
 
     /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
     /// \brief Convert to non-packed vector
-    operator vec<T, 1>() const { return vec<T, 1>{ x }; }
+    operator vec<T, 1>() const { return vec<T, 1> { x }; }
 
 public:
     /// @{
@@ -104,28 +104,28 @@ public: // Basics
 
 public:
     /// \brief Initialize all elements to zero
-    constexpr packed_vector() : storage() {}
+    constexpr packed_vector() : storage() { }
 
     /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
 
     /// \brief Initialize all elements to the provided value
-    constexpr packed_vector(T _xy) : packed_vector(_xy, _xy) {}
+    constexpr packed_vector(T _xy) : packed_vector(_xy, _xy) { }
 
     /// \brief Construct from a std::array
-    constexpr packed_vector(StorageType st) : storage(st) {}
+    constexpr packed_vector(StorageType st) : storage(st) { }
 
     /// \brief Construct from loose values
-    constexpr packed_vector(T _x, T _y) : storage{ _x, _y } {}
+    constexpr packed_vector(T _x, T _y) : storage { _x, _y } { }
 
     /// \brief Construct from a non-packed vector
-    constexpr packed_vector(vec<T, 2> simd) : packed_vector(simd.x, simd.y) {}
+    constexpr packed_vector(vec<T, 2> simd) : packed_vector(simd.x, simd.y) { }
 
     /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
     /// \brief Convert to non-packed vector
-    operator vec<T, 2>() const { return vec<T, 2>{ x, y }; }
+    operator vec<T, 2>() const { return vec<T, 2> { x, y }; }
 
 public:
     /// @{
@@ -172,29 +172,29 @@ public: // Basics
 
 public:
     /// \brief Initialize all elements to zero
-    constexpr packed_vector() : storage() {}
+    constexpr packed_vector() : storage() { }
 
     /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
 
     /// \brief Initialize all elements to the provided value
-    constexpr packed_vector(T _xyz) : packed_vector(_xyz, _xyz, _xyz) {}
+    constexpr packed_vector(T _xyz) : packed_vector(_xyz, _xyz, _xyz) { }
 
     /// \brief Construct from a std::array
-    constexpr packed_vector(StorageType st) : storage(st) {}
+    constexpr packed_vector(StorageType st) : storage(st) { }
 
     /// \brief Construct from loose values
-    constexpr packed_vector(T _x, T _y, T _z) : storage{ _x, _y, _z } {}
+    constexpr packed_vector(T _x, T _y, T _z) : storage { _x, _y, _z } { }
 
     /// \brief Construct from a non-packed vector
     constexpr packed_vector(vec<T, 3> simd)
-        : packed_vector(simd.x, simd.y, simd.z) {}
+        : packed_vector(simd.x, simd.y, simd.z) { }
 
     /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
     /// \brief Convert to non-packed vector
-    operator vec<T, 3>() const { return vec<T, 3>{ x, y, z }; }
+    operator vec<T, 3>() const { return vec<T, 3> { x, y, z }; }
 
 public:
     /// @{
@@ -241,31 +241,31 @@ public: // Basics
 
 public:
     /// \brief Initialize all elements to zero
-    constexpr packed_vector() : storage() {}
+    constexpr packed_vector() : storage() { }
 
     /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
 
     /// \brief Initialize all elements to the provided value
     constexpr packed_vector(T _xyzw)
-        : packed_vector(_xyzw, _xyzw, _xyzw, _xyzw) {}
+        : packed_vector(_xyzw, _xyzw, _xyzw, _xyzw) { }
 
     /// \brief Construct from a std::array
-    constexpr packed_vector(StorageType st) : storage(st) {}
+    constexpr packed_vector(StorageType st) : storage(st) { }
 
     /// \brief Construct from loose values
     constexpr packed_vector(T _x, T _y, T _z, T _w)
-        : storage{ _x, _y, _z, _w } {}
+        : storage { _x, _y, _z, _w } { }
 
     /// \brief Construct from a non-packed vector
     constexpr packed_vector(vec<T, 4> simd)
-        : packed_vector(simd.x, simd.y, simd.z, simd.w) {}
+        : packed_vector(simd.x, simd.y, simd.z, simd.w) { }
 
     /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
     /// \brief Convert to non-packed vector
-    operator vec<T, 4>() const { return vec<T, 4>{ x, y, z, w }; }
+    operator vec<T, 4>() const { return vec<T, 4> { x, y, z, w }; }
 
 public:
     /// @{
@@ -353,7 +353,7 @@ packed_vector<float16, N> half_vector(packed_vector<float, N> f) {
 }
 
 
-} // namespace dct
+} // namespace dlal
 
 
 #endif // LINALG_VECTOR_H

@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-using namespace dct;
+using namespace dlal;
 
 template <class T>
 bool fuzzy_eq(T a, T b, long double bound) {
@@ -78,11 +78,11 @@ TEST_CASE("quaternion") {
 
         REQUIRE(is(q, 0.0f, 0.0f, 0.0f, 1.0f));
 
-        quat q2(1.0, vec3{ 2.0f, 3.0f, 4.0f });
+        quat q2(1.0, vec3 { 2.0f, 3.0f, 4.0f });
 
         REQUIRE(is(q2, 2.0f, 3.0f, 4.0f, 1.0f));
 
-        quat q3(vec4{ 2.0f, 3.0f, 4.0f, 1.0f });
+        quat q3(vec4 { 2.0f, 3.0f, 4.0f, 1.0f });
 
         REQUIRE(is(q3, 2.0f, 3.0f, 4.0f, 1.0f));
     }
@@ -116,8 +116,8 @@ TEST_CASE("quaternion") {
 
         REQUIRE(binary_quat_check<float>(
             { 1, 2, 3, 4 }, { 1, 5, 7, 9 }, [](auto q1, auto, auto r1, auto) {
-                return is_same(q1 * vec3{ 1, 3, -1 },
-                               r1 * glm::vec3{ 1, 3, -1 });
+                return is_same(q1 * vec3 { 1, 3, -1 },
+                               r1 * glm::vec3 { 1, 3, -1 });
             }));
     }
 
@@ -186,8 +186,8 @@ TEST_CASE("quaternion") {
     SUBCASE("Other") {
         // we use different approaches, thus we loosen the bounds just a bit
         {
-            vec3 a = normalize(vec3{ 1, 2, -1 });
-            vec3 b = normalize(vec3{ -1, -1, -1 });
+            vec3 a = normalize(vec3 { 1, 2, -1 });
+            vec3 b = normalize(vec3 { -1, -1, -1 });
 
             auto quat = rotation_from_to(a, b);
 
@@ -201,8 +201,8 @@ TEST_CASE("quaternion") {
         }
 
         {
-            vec3 a = normalize(vec3{ -2, 2, -1 });
-            vec3 b = normalize(vec3{ -1, -4, -1 });
+            vec3 a = normalize(vec3 { -2, 2, -1 });
+            vec3 b = normalize(vec3 { -1, -4, -1 });
 
             auto quat = rotation_from_to(a, b);
 
@@ -218,8 +218,8 @@ TEST_CASE("quaternion") {
         // look at
 
         {
-            vec3 a = normalize(vec3{ -2, 2, -1 });
-            vec3 b = normalize(vec3{ -1, -4, -1 });
+            vec3 a = normalize(vec3 { -2, 2, -1 });
+            vec3 b = normalize(vec3 { -1, -4, -1 });
 
             auto quat = look_at_lh(a, b);
 
@@ -234,7 +234,7 @@ TEST_CASE("quaternion") {
         // from angles
 
         {
-            vec3 a{ -2, 2, -1 };
+            vec3 a { -2, 2, -1 };
 
             auto quat = from_angles(a);
 
@@ -248,7 +248,7 @@ TEST_CASE("quaternion") {
         // angle axis
 
         {
-            vec3 a{ -2, 2, -1 };
+            vec3 a { -2, 2, -1 };
 
             auto quat = from_angle_axis(.25f, a);
 

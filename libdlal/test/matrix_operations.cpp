@@ -5,7 +5,7 @@
 
 #include <glm/gtx/norm.hpp>
 
-using namespace dct;
+using namespace dlal;
 
 
 template <class T, size_t C, size_t R, class Function>

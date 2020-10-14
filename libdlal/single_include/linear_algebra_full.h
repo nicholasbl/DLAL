@@ -7,7 +7,7 @@
 
 #include <smmintrin.h>
 
-namespace dct {
+namespace dlal {
 
 /// Notes:
 /// Vector equality uses -1 (all bits set)! If you want to use conditionals,
@@ -16,19 +16,19 @@ namespace dct {
 ///
 
 #ifndef __SSE4_1__
-#error SSE 4.1 Support is required
+#    error SSE 4.1 Support is required
 #endif
 
 #ifndef __clang__
-#error Only the CLANG compiler is supported at this time
+#    error Only the CLANG compiler is supported at this time
 #endif
 
 #ifndef __x86_64__
-#warning Only tested on 64 bit archs at this time
+#    warning Only tested on 64 bit archs at this time
 #endif
 
 // Define how OpenCL views true and false
-#define VEC_TRUE -1
+#define VEC_TRUE  -1
 #define VEC_FALSE 0
 
 // We require extended vectors
@@ -85,24 +85,9 @@ namespace vector_detail {
 
 // Shuffle interface.
 // TODO: clean up
-#ifdef __clang__
 #define SHUFFLE(A, B, X, Y, Z, W) __builtin_shufflevector(A, B, X, Y, Z, W)
-#else
-#define SHUFFLE(A, B, X, Y, Z, W)                                              \
-    __builtin_shuffle(A, B, dct::vector_detail::ivec4{ X, Y, Z, W })
-#endif
 
 // constexpr versions of these common functions
-
-template <class T>
-constexpr T cmin(T a, T b) {
-    return (a < b) ? a : b;
-}
-
-template <class T>
-constexpr T cmax(T a, T b) {
-    return (a > b) ? a : b;
-}
 
 template <class T>
 constexpr T cabs(T a) {
@@ -112,15 +97,23 @@ constexpr T cabs(T a) {
 ///
 /// \brief Convert a bool to an OpenCL boolean-int.
 ///
-inline int bool_to_vec_bool(bool b) { return b * -1; }
+inline int bool_to_vec_bool(bool b) {
+    return b * -1;
+}
 
-inline vec4 v3to4(vec3 a) { return __builtin_shufflevector(a, a, 0, 1, 2, -1); }
+inline vec4 v3to4(vec3 a) {
+    return __builtin_shufflevector(a, a, 0, 1, 2, -1);
+}
 inline vec4 v2to4(vec2 a) {
     return __builtin_shufflevector(a, a, 0, 1, -1, -1);
 }
 
-inline vec2 v4to2(vec4 a) { return __builtin_shufflevector(a, a, 0, 1); }
-inline vec3 v4to3(vec4 a) { return __builtin_shufflevector(a, a, 0, 1, 2); }
+inline vec2 v4to2(vec4 a) {
+    return __builtin_shufflevector(a, a, 0, 1);
+}
+inline vec3 v4to3(vec4 a) {
+    return __builtin_shufflevector(a, a, 0, 1, 2);
+}
 
 } // namespace vector_detail
 
@@ -137,27 +130,27 @@ vec<T, N> new_vec(std::array<T, N> a) {
 
 template <class T>
 vec<T, 4> new_vec(vec<T, 3> a, T b) {
-    return vec<T, 4>{ a.x, a.y, a.z, b };
+    return vec<T, 4> { a.x, a.y, a.z, b };
 }
 
 template <class T>
 vec<T, 4> new_vec(vec<T, 2> a, vec<T, 2> b) {
-    return vec<T, 4>{ a.x, a.y, b.x, b.y };
+    return vec<T, 4> { a.x, a.y, b.x, b.y };
 }
 
 template <class T>
 vec<T, 4> new_vec(vec<T, 2> a, T b, T c) {
-    return vec<T, 4>{ a.x, a.y, b, c };
+    return vec<T, 4> { a.x, a.y, b, c };
 }
 
 template <class T>
 vec<T, 4> new_vec(T a, vec<T, 2> b, T c) {
-    return vec<T, 4>{ a, b.x, b.y, c };
+    return vec<T, 4> { a, b.x, b.y, c };
 }
 
 template <class T>
 vec<T, 4> new_vec(T a, T b, vec<T, 2> c) {
-    return vec<T, 4>{ a, b, c.x, c.y };
+    return vec<T, 4> { a, b, c.x, c.y };
 }
 
 inline vec<int, 4> new_vec(int a, int b, int c, int d) {
@@ -169,10 +162,10 @@ inline vec<int, 4> new_vec(int a, int b, int c, int d) {
 
 inline vec<int, 4> new_vec(bool a, bool b, bool c, bool d) {
     using namespace vector_detail;
-    return vec<int, 4>{ bool_to_vec_bool(a),
-                        bool_to_vec_bool(b),
-                        bool_to_vec_bool(c),
-                        bool_to_vec_bool(d) };
+    return vec<int, 4> { bool_to_vec_bool(a),
+                         bool_to_vec_bool(b),
+                         bool_to_vec_bool(c),
+                         bool_to_vec_bool(d) };
 }
 
 // Operations ==================================================================
@@ -197,7 +190,7 @@ float dot(vec<T, 3> a, vec<T, 3> b) {
 }
 
 ///
-/// \brief Dot product specialization for arb vec3
+/// \brief Dot product specialization for arb vec4
 ///
 template <class T>
 float dot(vec<T, 4> a, vec<T, 4> b) {
@@ -395,15 +388,18 @@ vec<T, N> min(vec<T, N> const& a, vec<T, N> const& b) {
     vec<T, N> ret;
     using namespace vector_detail;
     if constexpr (N == 1) {
-        return vec<T, N>{ cmin(a.x, b.x) };
+        return vec<T, N> { std::min(a.x, b.x) };
     } else if constexpr (N == 2) {
-        return vec<T, N>{ cmin(a.x, b.x), cmin(a.y, b.y) };
+        return vec<T, N> { std::min(a.x, b.x), std::min(a.y, b.y) };
     } else if constexpr (N == 3) {
-        return vec<T, N>{ cmin(a.x, b.x), cmin(a.y, b.y), cmin(a.z, b.z) };
+        return vec<T, N> { std::min(a.x, b.x),
+                           std::min(a.y, b.y),
+                           std::min(a.z, b.z) };
     } else if constexpr (N == 4) {
-        return vec<T, N>{
-            cmin(a.x, b.x), cmin(a.y, b.y), cmin(a.z, b.z), cmin(a.w, b.w)
-        };
+        return vec<T, N> { std::min(a.x, b.x),
+                           std::min(a.y, b.y),
+                           std::min(a.z, b.z),
+                           std::min(a.w, b.w) };
     }
     return ret;
 }
@@ -420,7 +416,9 @@ inline vec3 min(vec3 const& a, vec3 const& b) {
     return v4to3(tmp);
 }
 
-inline vec4 min(vec4 const& a, vec4 const& b) { return _mm_min_ps(a, b); }
+inline vec4 min(vec4 const& a, vec4 const& b) {
+    return _mm_min_ps(a, b);
+}
 
 ///
 /// \brief Compute the component-wise max between two vectors.
@@ -430,19 +428,19 @@ vec<T, N> max(vec<T, N> const& a, vec<T, N> const& b) {
     vec<T, N> ret;
     using namespace vector_detail;
     if constexpr (N == 1) {
-        ret.x = cmax(a.x, b.x);
+        ret.x = std::max(a.x, b.x);
     } else if constexpr (N == 2) {
-        ret.x = cmax(a.x, b.x);
-        ret.y = cmax(a.y, b.y);
+        ret.x = std::max(a.x, b.x);
+        ret.y = std::max(a.y, b.y);
     } else if constexpr (N == 3) {
-        ret.x = cmax(a.x, b.x);
-        ret.y = cmax(a.y, b.y);
-        ret.z = cmax(a.z, b.z);
+        ret.x = std::max(a.x, b.x);
+        ret.y = std::max(a.y, b.y);
+        ret.z = std::max(a.z, b.z);
     } else if constexpr (N == 4) {
-        ret.x = cmax(a.x, b.x);
-        ret.y = cmax(a.y, b.y);
-        ret.z = cmax(a.z, b.z);
-        ret.w = cmax(a.w, b.w);
+        ret.x = std::max(a.x, b.x);
+        ret.y = std::max(a.y, b.y);
+        ret.z = std::max(a.z, b.z);
+        ret.w = std::max(a.w, b.w);
     }
     return ret;
 }
@@ -459,7 +457,9 @@ inline vec3 max(vec3 const& a, vec3 const& b) {
     return v4to3(tmp);
 }
 
-inline vec4 max(vec4 const& a, vec4 const& b) { return _mm_max_ps(a, b); }
+inline vec4 max(vec4 const& a, vec4 const& b) {
+    return _mm_max_ps(a, b);
+}
 
 ///
 /// \brief Compute the min between all components of a vector.
@@ -470,11 +470,11 @@ T component_min(vec<T, N> const& a) {
     if constexpr (N == 1) {
         return a.x;
     } else if constexpr (N == 2) {
-        return cmin(a.x, a.y);
+        return std::min(a.x, a.y);
     } else if constexpr (N == 3) {
-        return cmin(cmin(a.x, a.y), a.z);
+        return std::min(std::min(a.x, a.y), a.z);
     } else if constexpr (N == 4) {
-        return cmin(cmin(a.x, a.y), cmin(a.z, a.w));
+        return std::min(std::min(a.x, a.y), std::min(a.z, a.w));
     }
 }
 
@@ -487,11 +487,11 @@ T component_max(vec<T, N> const& a) {
     if constexpr (N == 1) {
         return a.x;
     } else if constexpr (N == 2) {
-        return cmax(a.x, a.y);
+        return std::max(a.x, a.y);
     } else if constexpr (N == 3) {
-        return cmax(cmax(a.x, a.y), a.z);
+        return std::max(std::max(a.x, a.y), a.z);
     } else if constexpr (N == 4) {
-        return cmax(cmax(a.x, a.y), cmax(a.z, a.w));
+        return std::max(std::max(a.x, a.y), std::max(a.z, a.w));
     }
 }
 
@@ -616,7 +616,9 @@ vec<T, N> floor(vec<T, N> const& a) {
     return ret;
 }
 
-inline vec4 floor(vec4 const& a) { return _mm_floor_ps(a); }
+inline vec4 floor(vec4 const& a) {
+    return _mm_floor_ps(a);
+}
 inline vec3 floor(vec3 const& a) {
     using namespace vector_detail;
     return v4to3(floor(v3to4(a)));
@@ -652,7 +654,9 @@ vec<T, N> ceil(vec<T, N> const& a) {
     return ret;
 }
 
-inline vec4 ceil(vec4 const& a) { return _mm_ceil_ps(a); }
+inline vec4 ceil(vec4 const& a) {
+    return _mm_ceil_ps(a);
+}
 inline vec3 ceil(vec3 const& a) {
     using namespace vector_detail;
     return v4to3(ceil(v3to4(a)));
@@ -714,7 +718,7 @@ vec<T, N> mix(vec<T, N> const& a, vec<T, N> const& b, vec<T, N> const& t) {
     return a + ((b - a) * t);
 }
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_VECTOR_DETAIL_H
 #ifndef LINALG_VECTOR_H
@@ -725,12 +729,12 @@ vec<T, N> mix(vec<T, N> const& a, vec<T, N> const& b, vec<T, N> const& t) {
 #include <array>
 #include <cmath>
 
-namespace dct {
+namespace dlal {
 
 /// \brief The basic packed vector class; specializations define the 1-4
 /// component cases. These should be used when storage sizes are important.
 template <class T, size_t N>
-class packed_vector {};
+class packed_vector { };
 
 // Vector 1 ====================================================================
 
@@ -759,7 +763,7 @@ public: // Basics
 
 public:
     /// \brief Initialize all elements to zero
-    constexpr packed_vector() : storage() {}
+    constexpr packed_vector() : storage() { }
 
     /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
@@ -768,16 +772,16 @@ public:
     constexpr packed_vector(T _) { storage.fill(_); }
 
     /// \brief Construct from a std::array
-    constexpr packed_vector(StorageType st) : storage(st) {}
+    constexpr packed_vector(StorageType st) : storage(st) { }
 
     /// \brief Construct from a non-packed vector
-    constexpr packed_vector(vec<T, 1> simd) : x(simd.x) {}
+    constexpr packed_vector(vec<T, 1> simd) : x(simd.x) { }
 
     /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
     /// \brief Convert to non-packed vector
-    operator vec<T, 1>() const { return vec<T, 1>{ x }; }
+    operator vec<T, 1>() const { return vec<T, 1> { x }; }
 
 public:
     /// @{
@@ -822,28 +826,28 @@ public: // Basics
 
 public:
     /// \brief Initialize all elements to zero
-    constexpr packed_vector() : storage() {}
+    constexpr packed_vector() : storage() { }
 
     /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
 
     /// \brief Initialize all elements to the provided value
-    constexpr packed_vector(T _xy) : packed_vector(_xy, _xy) {}
+    constexpr packed_vector(T _xy) : packed_vector(_xy, _xy) { }
 
     /// \brief Construct from a std::array
-    constexpr packed_vector(StorageType st) : storage(st) {}
+    constexpr packed_vector(StorageType st) : storage(st) { }
 
     /// \brief Construct from loose values
-    constexpr packed_vector(T _x, T _y) : storage{ _x, _y } {}
+    constexpr packed_vector(T _x, T _y) : storage { _x, _y } { }
 
     /// \brief Construct from a non-packed vector
-    constexpr packed_vector(vec<T, 2> simd) : packed_vector(simd.x, simd.y) {}
+    constexpr packed_vector(vec<T, 2> simd) : packed_vector(simd.x, simd.y) { }
 
     /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
     /// \brief Convert to non-packed vector
-    operator vec<T, 2>() const { return vec<T, 2>{ x, y }; }
+    operator vec<T, 2>() const { return vec<T, 2> { x, y }; }
 
 public:
     /// @{
@@ -890,29 +894,29 @@ public: // Basics
 
 public:
     /// \brief Initialize all elements to zero
-    constexpr packed_vector() : storage() {}
+    constexpr packed_vector() : storage() { }
 
     /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
 
     /// \brief Initialize all elements to the provided value
-    constexpr packed_vector(T _xyz) : packed_vector(_xyz, _xyz, _xyz) {}
+    constexpr packed_vector(T _xyz) : packed_vector(_xyz, _xyz, _xyz) { }
 
     /// \brief Construct from a std::array
-    constexpr packed_vector(StorageType st) : storage(st) {}
+    constexpr packed_vector(StorageType st) : storage(st) { }
 
     /// \brief Construct from loose values
-    constexpr packed_vector(T _x, T _y, T _z) : storage{ _x, _y, _z } {}
+    constexpr packed_vector(T _x, T _y, T _z) : storage { _x, _y, _z } { }
 
     /// \brief Construct from a non-packed vector
     constexpr packed_vector(vec<T, 3> simd)
-        : packed_vector(simd.x, simd.y, simd.z) {}
+        : packed_vector(simd.x, simd.y, simd.z) { }
 
     /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
     /// \brief Convert to non-packed vector
-    operator vec<T, 3>() const { return vec<T, 3>{ x, y, z }; }
+    operator vec<T, 3>() const { return vec<T, 3> { x, y, z }; }
 
 public:
     /// @{
@@ -959,31 +963,31 @@ public: // Basics
 
 public:
     /// \brief Initialize all elements to zero
-    constexpr packed_vector() : storage() {}
+    constexpr packed_vector() : storage() { }
 
     /// \brief Default copy constructor
     constexpr packed_vector(packed_vector const&) = default;
 
     /// \brief Initialize all elements to the provided value
     constexpr packed_vector(T _xyzw)
-        : packed_vector(_xyzw, _xyzw, _xyzw, _xyzw) {}
+        : packed_vector(_xyzw, _xyzw, _xyzw, _xyzw) { }
 
     /// \brief Construct from a std::array
-    constexpr packed_vector(StorageType st) : storage(st) {}
+    constexpr packed_vector(StorageType st) : storage(st) { }
 
     /// \brief Construct from loose values
     constexpr packed_vector(T _x, T _y, T _z, T _w)
-        : storage{ _x, _y, _z, _w } {}
+        : storage { _x, _y, _z, _w } { }
 
     /// \brief Construct from a non-packed vector
     constexpr packed_vector(vec<T, 4> simd)
-        : packed_vector(simd.x, simd.y, simd.z, simd.w) {}
+        : packed_vector(simd.x, simd.y, simd.z, simd.w) { }
 
     /// \brief Default copy assignment
     constexpr packed_vector& operator=(packed_vector const& v) = default;
 
     /// \brief Convert to non-packed vector
-    operator vec<T, 4>() const { return vec<T, 4>{ x, y, z, w }; }
+    operator vec<T, 4>() const { return vec<T, 4> { x, y, z, w }; }
 
 public:
     /// @{
@@ -1071,7 +1075,7 @@ packed_vector<float16, N> half_vector(packed_vector<float, N> f) {
 }
 
 
-} // namespace dct
+} // namespace dlal
 
 
 #endif // LINALG_VECTOR_H
@@ -1081,7 +1085,7 @@ packed_vector<float16, N> half_vector(packed_vector<float, N> f) {
 
 #include <cmath>
 
-namespace dct {
+namespace dlal {
 
 #define VECTOR_OP(OP)                                                          \
     vec<T, N> ret;                                                             \
@@ -1115,7 +1119,7 @@ namespace dct {
 
 
 template <class T, int N>
-vec<T, N> sqrt(vec<T, N> const& a){ VECTOR_OP(std::sqrt) }
+vec<T, N> sqrt(vec<T, N> const& a) { VECTOR_OP(std::sqrt) }
 
 SPEC_VECTOR_OP(sqrt, _mm_sqrt_ps);
 
@@ -1162,7 +1166,7 @@ vec<T, N> log(vec<T, N> const& a) {
 #undef VECTOR_OP
 #undef SPEC_VECTOR_OP
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_VECTOR_TRIG_H
 #ifndef LINALG_MATRIX_DETAIL_H
@@ -1172,7 +1176,7 @@ vec<T, N> log(vec<T, N> const& a) {
 #include <array>
 #include <cstddef>
 
-namespace dct {
+namespace dlal {
 
 namespace matrix_detail {
 
@@ -1181,17 +1185,17 @@ namespace matrix_detail {
 ///
 template <int N, class T, int M>
 constexpr vec<T, N> upgrade(vec<T, M> const& v) {
-    constexpr size_t C = vector_detail::cmin(N, M);
+    constexpr size_t C = std::min(N, M);
     static_assert(C <= 4);
     vec<T, N> ret;
     if constexpr (C == 1) {
-        return vec<T, N>{ v.x };
+        return vec<T, N> { v.x };
     } else if constexpr (C == 2) {
-        return vec<T, N>{ v.x, v.y };
+        return vec<T, N> { v.x, v.y };
     } else if constexpr (C == 3) {
-        return vec<T, N>{ v.x, v.y, v.z };
+        return vec<T, N> { v.x, v.y, v.z };
     } else if constexpr (C == 4) {
-        return vec<T, N>{ v.x, v.y, v.z, v.w };
+        return vec<T, N> { v.x, v.y, v.z, v.w };
     }
     return ret;
 }
@@ -1202,7 +1206,7 @@ constexpr vec<T, N> upgrade(vec<T, M> const& v) {
 ///
 template <int DEST_N, class T, int SRC_N>
 constexpr void overlay(vec<T, SRC_N> const& src, vec<T, DEST_N>& dest) {
-    constexpr size_t LOW_N = vector_detail::cmin(DEST_N, SRC_N);
+    constexpr size_t LOW_N = std::min(DEST_N, SRC_N);
     static_assert(LOW_N <= 4);
 
     if constexpr (SRC_N == DEST_N) {
@@ -1369,30 +1373,30 @@ vec<T, N> get_identity_vec() {
         return vec<T, N>(0);
         // else construct a vector with a 1 in the right slot
     } else if constexpr (N == 1) {
-        return vec<T, N>{ 1 };
+        return vec<T, N> { 1 };
     } else if constexpr (N == 2) {
         if constexpr (AT == 0) {
-            return vec<T, N>{ 1, 0 };
+            return vec<T, N> { 1, 0 };
         } else if constexpr (AT == 1) {
-            return vec<T, N>{ 0, 1 };
+            return vec<T, N> { 0, 1 };
         }
     } else if constexpr (N == 3) {
         if constexpr (AT == 0) {
-            return vec<T, N>{ 1, 0, 0 };
+            return vec<T, N> { 1, 0, 0 };
         } else if constexpr (AT == 1) {
-            return vec<T, N>{ 0, 1, 0 };
+            return vec<T, N> { 0, 1, 0 };
         } else if constexpr (AT == 2) {
-            return vec<T, N>{ 0, 0, 1 };
+            return vec<T, N> { 0, 0, 1 };
         }
     } else if constexpr (N == 4) {
         if constexpr (AT == 0) {
-            return vec<T, N>{ 1, 0, 0, 0 };
+            return vec<T, N> { 1, 0, 0, 0 };
         } else if constexpr (AT == 1) {
-            return vec<T, N>{ 0, 1, 0, 0 };
+            return vec<T, N> { 0, 1, 0, 0 };
         } else if constexpr (AT == 2) {
-            return vec<T, N>{ 0, 0, 1, 0 };
+            return vec<T, N> { 0, 0, 1, 0 };
         } else if constexpr (AT == 3) {
-            return vec<T, N>{ 0, 0, 0, 1 };
+            return vec<T, N> { 0, 0, 0, 1 };
         }
     }
 }
@@ -1427,7 +1431,7 @@ constexpr auto get_identity_storage() {
 
 } // namespace matrix_detail
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_MATRIX_DETAIL_H
 #ifndef LINALG_MATRIX_H
@@ -1436,7 +1440,7 @@ constexpr auto get_identity_storage() {
 
 #include <xmmintrin.h>
 
-namespace dct {
+namespace dlal {
 
 ///
 /// \brief The identity_t struct allows the user to select the identity
@@ -1486,11 +1490,11 @@ public: // Basics
 
 public:
     /// \brief Initialize all cells to zero
-    constexpr mat() : storage() {}
+    constexpr mat() : storage() { }
 
     /// \brief Initialize the matrix to the identity.
     constexpr mat(identity_t)
-        : storage(matrix_detail::get_identity_storage<T, C, R>()) {}
+        : storage(matrix_detail::get_identity_storage<T, C, R>()) { }
 
     /// \brief Default copy behavior.
     constexpr mat(mat const&) = default;
@@ -1517,7 +1521,7 @@ public:
     constexpr mat(T value) { storage.fill(value); }
 
     /// \brief Initialize the matrix with an array of columns.
-    constexpr mat(StorageType pack) : storage(pack) {}
+    constexpr mat(StorageType pack) : storage(pack) { }
 
     /// \brief Initialize values from a differently sized matrix, zeros
     /// otherwise.
@@ -1894,7 +1898,7 @@ bool is_equal(mat<T, C, R> const& a, mat<T, C, R> const& b, T limit) {
     return is_all(delta < c);
 }
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_MATRIX_H
 #ifndef LINALG_QUAT_H
@@ -1902,7 +1906,7 @@ bool is_equal(mat<T, C, R> const& a, mat<T, C, R> const& b, T limit) {
 
 
 
-namespace dct {
+namespace dlal {
 
 ///
 /// \brief The quaternion class models a rotation
@@ -1918,16 +1922,16 @@ struct quaternion {
 
 public:
     /// \brief Initialize quaternion to zero
-    quaternion() : storage{ 0, 0, 0, 1 } {}
+    quaternion() : storage { 0, 0, 0, 1 } { }
 
     /// \brief Initialize quaternion from loose values. W is the scalar.
-    quaternion(T x, T y, T z, T w) : storage{ x, y, z, w } {}
+    quaternion(T x, T y, T z, T w) : storage { x, y, z, w } { }
 
     /// \brief Initialize quaternion from vector and scalar.
-    quaternion(T w, vec<T, 3> const& v) : storage{ v.x, v.y, v.z, w } {}
+    quaternion(T w, vec<T, 3> const& v) : storage { v.x, v.y, v.z, w } { }
 
     /// \brief Initialize quaternion from a vector; w should be the scalar.
-    explicit quaternion(vec<T, 4> const& f) : storage(f) {}
+    explicit quaternion(vec<T, 4> const& f) : storage(f) { }
 
 public:
     /// \brief Convert to a vector
@@ -1959,16 +1963,16 @@ quaternion<T> operator*(quaternion<T> const& q, T scalar) {
 
 template <class T>
 quaternion<T> operator*(quaternion<T> const& q, quaternion<T> const& r) {
-    static constexpr dct::vec<T, 4> mask1{ 1, 1, -1, -1 };
-    static constexpr dct::vec<T, 4> mask2{ -1, 1, 1, -1 };
-    static constexpr dct::vec<T, 4> mask3{ 1, -1, 1, -1 };
+    static constexpr dlal::vec<T, 4> mask1 { 1, 1, -1, -1 };
+    static constexpr dlal::vec<T, 4> mask2 { -1, 1, 1, -1 };
+    static constexpr dlal::vec<T, 4> mask3 { 1, -1, 1, -1 };
 
-    dct::vec<T, 4> p1 = r.storage.w * q.storage;
-    dct::vec<T, 4> p2 = mask1 * r.storage.x * q.storage.wzyx;
-    dct::vec<T, 4> p3 = mask2 * r.storage.y * q.storage.zwxy;
-    dct::vec<T, 4> p4 = mask3 * r.storage.z * q.storage.yxwz;
+    dlal::vec<T, 4> p1 = r.storage.w * q.storage;
+    dlal::vec<T, 4> p2 = mask1 * r.storage.x * q.storage.wzyx;
+    dlal::vec<T, 4> p3 = mask2 * r.storage.y * q.storage.zwxy;
+    dlal::vec<T, 4> p4 = mask3 * r.storage.z * q.storage.yxwz;
 
-    return dct::quat(p1 + p2 + p3 + p4);
+    return dlal::quat(p1 + p2 + p3 + p4);
 }
 
 template <class T>
@@ -2046,7 +2050,7 @@ mat<T, 4, 4> mat4_from_unit_quaternion(quaternion<T> const& q) {
     ret[0] = vector_detail::v3to4(m3[0]);
     ret[1] = vector_detail::v3to4(m3[1]);
     ret[2] = vector_detail::v3to4(m3[2]);
-    ret[3] = vec4{ 0, 0, 0, 1 };
+    ret[3] = vec4 { 0, 0, 0, 1 };
 
     ret[0].w = 0;
     ret[1].w = 0;
@@ -2113,7 +2117,7 @@ template <class T>
 quaternion<T> rotation_from_to(vec<T, 3> const& from, vec<T, 3> const& to) {
     vec<T, 3> const w = cross(from, to);
 
-    vec<T, 4> lq{ w.x, w.y, w.z, dot(from, to) };
+    vec<T, 4> lq { w.x, w.y, w.z, dot(from, to) };
 
     lq.w += dot(lq, lq);
     return normalize(quaternion<T>(lq));
@@ -2129,7 +2133,7 @@ template <class T>
 quaternion<T> look_at_lh(vec<T, 3> const& norm_direction,
                          vec<T, 3> const& norm_up) {
     if (std::abs(dot(norm_direction, norm_up)) >= 1) {
-        return rotation_from_to(vec<T, 3>{ 0, 0, -1 }, norm_direction);
+        return rotation_from_to(vec<T, 3> { 0, 0, -1 }, norm_direction);
     }
 
     mat<T, 3, 3> ret;
@@ -2168,14 +2172,14 @@ quaternion<T> from_angle_axis(T angle, vec<T, 3> axis) {
 }
 
 
-} // namespace dct
+} // namespace dlal
 
 #endif // QUAT_H
 #ifndef LINALG_PACKED_MAT_H
 #define LINALG_PACKED_MAT_H
 
 
-namespace dct {
+namespace dlal {
 
 ///
 /// \brief The PackedMatrix class defines a column-major, size restricted
@@ -2212,7 +2216,7 @@ public: // Basics
 
 public:
     /// \brief Initialize all cells to zero
-    constexpr packed_mat() : storage({}) {}
+    constexpr packed_mat() : storage({}) { }
 
     /// \brief Default copy constructor
     constexpr packed_mat(packed_mat const&) = default;
@@ -2232,7 +2236,7 @@ public:
     }
 
     /// \brief Create a matrix from an array of values.
-    constexpr packed_mat(std::array<float, C * R> const& a) : storage(a) {}
+    constexpr packed_mat(std::array<float, C * R> const& a) : storage(a) { }
 
     /// \brief Initialize all cells to the given value
     constexpr packed_mat(T value) { storage.fill(value); }
@@ -2280,7 +2284,7 @@ using packed_mat42 = packed_mat<float, 4, 2>;
 using packed_mat43 = packed_mat<float, 4, 3>;
 using packed_mat44 = packed_mat<float, 4, 4>;
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_PACKED_MAT_H
 #ifndef LINALG_MAT_TRANSFORM_H
@@ -2289,7 +2293,7 @@ using packed_mat44 = packed_mat<float, 4, 4>;
 
 #include <cmath>
 
-namespace dct {
+namespace dlal {
 
 ///
 /// \brief Add a translation to a matrix, in place
@@ -2375,14 +2379,14 @@ void scale_in_place(mat<T, 4, 4>& m, vec<T, 3> const& v) {
     m[3] = m[3];
 }
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_MAT_TRANSFORM_H
 #ifndef LINALG_MATRIX_OPERATIONS_H
 #define LINALG_MATRIX_OPERATIONS_H
 
 
-namespace dct {
+namespace dlal {
 
 template <class T, size_t C, size_t R>
 mat<T, R, C> transpose(mat<T, C, R> const& m) {
@@ -2479,10 +2483,10 @@ inline T determinant(mat<T, 4, 4> const& m) {
     T const e = m[2][0] * m[3][2] - m[3][0] * m[2][2];
     T const f = m[2][0] * m[3][1] - m[3][0] * m[2][1];
 
-    vec<T, 4> const coeffs{ +(m[1][1] * a - m[1][2] * b + m[1][3] * c),
-                            -(m[1][0] * a - m[1][2] * d + m[1][3] * e),
-                            +(m[1][0] * b - m[1][1] * d + m[1][3] * f),
-                            -(m[1][0] * c - m[1][1] * e + m[1][2] * f) };
+    vec<T, 4> const coeffs { +(m[1][1] * a - m[1][2] * b + m[1][3] * c),
+                             -(m[1][0] * a - m[1][2] * d + m[1][3] * e),
+                             +(m[1][0] * b - m[1][1] * d + m[1][3] * f),
+                             -(m[1][0] * c - m[1][1] * e + m[1][2] * f) };
 
     return component_sum(m[0] * coeffs);
 }
@@ -2532,8 +2536,12 @@ inline vec4 _matrix2x2_mult_adj(vec4 vec1, vec4 vec2) {
 
 namespace matrix_detail {
 
-inline auto extract_a(vec4 a, vec4 b) { return _mm_movelh_ps(a, b); }
-inline auto extract_b(vec4 a, vec4 b) { return _mm_movehl_ps(b, a); }
+inline auto extract_a(vec4 a, vec4 b) {
+    return _mm_movelh_ps(a, b);
+}
+inline auto extract_b(vec4 a, vec4 b) {
+    return _mm_movehl_ps(b, a);
+}
 
 } // namespace matrix_detail
 
@@ -2556,9 +2564,9 @@ inline auto transform_inverse(mat4 const& m) {
     size_sqr += ret[1] * ret[1];
     size_sqr += ret[2] * ret[2];
 
-    __m128 one{ 1.0f };
+    __m128 one { 1.0f };
     __m128 rSizeSqr = _mm_blendv_ps(
-        (one / size_sqr), one, _mm_cmplt_ps(size_sqr, __m128{ SMALL_VALUE }));
+        (one / size_sqr), one, _mm_cmplt_ps(size_sqr, __m128 { SMALL_VALUE }));
 
     ret[0] = (ret[0] * rSizeSqr);
     ret[1] = (ret[1] * rSizeSqr);
@@ -2624,7 +2632,7 @@ inline auto inverse(mat4 const& m) {
     return ret;
 }
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_MATRIX_OPERATIONS_H
 #ifndef LINALG_TMATRIX_H
@@ -2633,7 +2641,7 @@ inline auto inverse(mat4 const& m) {
 
 #include <cassert>
 
-namespace dct {
+namespace dlal {
 
 
 ///
@@ -2645,24 +2653,25 @@ namespace dct {
 /// translates, your code should add the translation, rotation, and finally
 /// scale.
 ///
-class TMatrix {
+class Transformation {
     mat4 m_mat = mat4(identity);
 
 public:
     /// \brief Create a default transformation matrix (the identity)
-    TMatrix() = default;
+    Transformation() = default;
 
     /// \brief Create a matrix with the given rotation and scaling matrix
-    explicit TMatrix(mat3 const& f) : m_mat(f) { m_mat[3][3] = 1; }
+    explicit Transformation(mat3 const& f) : m_mat(f) { m_mat[3][3] = 1; }
 
     /// \brief Create a transformation matrix using a provided 4x4 mat.
-    explicit TMatrix(mat4 const& f) : m_mat(f) {}
+    explicit Transformation(mat4 const& f) : m_mat(f) { }
 
     /// \brief Create a matrix with a rotation.
-    explicit TMatrix(quat const& q) : m_mat(mat4_from_unit_quaternion(q)) {}
+    explicit Transformation(quat const& q)
+        : m_mat(mat4_from_unit_quaternion(q)) { }
 
     /// \brief Create a matrix with an array of values
-    explicit TMatrix(std::array<float, 16> const& f) : m_mat(f) {}
+    explicit Transformation(std::array<float, 16> const& f) : m_mat(f) { }
 
 public: // setters
     /// \brief Add a translation by x,y,z
@@ -2705,31 +2714,31 @@ public: // setters
 
 
     /// \brief Obtain an inverse transform
-    TMatrix inverted() const;
+    Transformation inverted() const;
     /// \brief Invert this transform in-place
     void invert();
 
     /// \brief Obtain an transposed transform
-    TMatrix transposed() const;
+    Transformation transposed() const;
     /// \brief Transpose this transform in-place
     void transpose();
 
 public: // operation
     /// \brief Transform a vec3. The transform occurs using homogenous
     /// coordinates
-    vec3 operator*(vec3 const&)const;
+    vec3 operator*(vec3 const&) const;
     /// \brief Transform a vec4.
-    vec4 operator*(vec4 const&)const;
+    vec4 operator*(vec4 const&) const;
 
     /// \brief Add the transformations from another TMatrix
-    TMatrix operator*(TMatrix const&)const;
+    Transformation operator*(Transformation const&) const;
 
     /// \brief Transform a vector, without translation
     vec3 rotate_scale_only(vec3 const&) const;
 
     /// \brief Obtain a transformation matrix with only the rotation and scale
     /// components of this transform.
-    TMatrix get_rotate_scale_only() const;
+    Transformation get_rotate_scale_only() const;
 
 
 public: // access
@@ -2759,7 +2768,7 @@ public: // access
 /// \param zNear Distance of near clipping plane. Must be positive and nonzero.
 /// \param zFar Distance of far clipping plane. Must be positive.
 ///
-TMatrix
+Transformation
 make_perspective_matrix_lh(float fovy, float aspect, float zNear, float zFar);
 
 ///
@@ -2774,12 +2783,12 @@ make_perspective_matrix_lh(float fovy, float aspect, float zNear, float zFar);
 /// \param near Distance of near clipping plane
 /// \param far Distance of far clipping plane
 ///
-TMatrix make_frustum_matrix_lh(float left,
-                               float right,
-                               float bottom,
-                               float top,
-                               float near,
-                               float far);
+Transformation make_frustum_matrix_lh(float left,
+                                      float right,
+                                      float bottom,
+                                      float top,
+                                      float near,
+                                      float far);
 
 ///
 /// \brief Make a left-handed orthogonal perspective matrix
@@ -2792,12 +2801,12 @@ TMatrix make_frustum_matrix_lh(float left,
 /// \param near Distance of near clipping plane
 /// \param far Distance of far clipping plane
 ///
-TMatrix make_ortho_matrix_lh(float left,
-                             float right,
-                             float bottom,
-                             float top,
-                             float zNear,
-                             float zFar);
+Transformation make_ortho_matrix_lh(float left,
+                                    float right,
+                                    float bottom,
+                                    float top,
+                                    float zNear,
+                                    float zFar);
 
 ///
 /// \brief Make a left handed look-at transformation matrix
@@ -2805,116 +2814,137 @@ TMatrix make_ortho_matrix_lh(float left,
 /// \param center Coordinate of the view target
 /// \param up Vector that defines the 'up' direction. Must be normalized.
 ///
-TMatrix make_look_at_lh(vec3 const& eye, vec3 const& center, vec3 const& up);
+Transformation
+make_look_at_lh(vec3 const& eye, vec3 const& center, vec3 const& up);
 
 // Implementation ==============================================================
 
 
-inline void TMatrix::translate(vec3 const& v) {
-    dct::translate_in_place(m_mat, v);
+inline void Transformation::translate(vec3 const& v) {
+    dlal::translate_in_place(m_mat, v);
 }
 
-inline void TMatrix::translate(float x, float y, float z) {
-    dct::translate_in_place(m_mat, vec3{ x, y, z });
+inline void Transformation::translate(float x, float y, float z) {
+    dlal::translate_in_place(m_mat, vec3 { x, y, z });
 }
 
-inline void TMatrix::clear_translate() {
+inline void Transformation::clear_translate() {
     auto const v = m_mat[3];
-    m_mat[3]     = vec4{ 0, 0, 0, v.w };
+    m_mat[3]     = vec4 { 0, 0, 0, v.w };
 }
 
-inline void TMatrix::rotate(float radians, float x, float y, float z) {
-    vec3 v{ x, y, z };
-    m_mat = dct::rotate(m_mat, radians, v);
+inline void Transformation::rotate(float radians, float x, float y, float z) {
+    vec3 v { x, y, z };
+    m_mat = dlal::rotate(m_mat, radians, v);
 }
 
-inline void TMatrix::rotate(quat const& q) {
+inline void Transformation::rotate(quat const& q) {
     m_mat *= mat4_from_unit_quaternion(normalize(q));
 }
 
-inline void TMatrix::scale(float x, float y, float z) {
-    dct::scale_in_place(m_mat, vec3{ x, y, z });
+inline void Transformation::scale(float x, float y, float z) {
+    dlal::scale_in_place(m_mat, vec3 { x, y, z });
 }
 
-inline void TMatrix::scale(vec3 const& v) { dct::scale_in_place(m_mat, v); }
-
-inline void TMatrix::scale(float f) {
-    dct::scale_in_place(m_mat, vec3{ f, f, f });
+inline void Transformation::scale(vec3 const& v) {
+    dlal::scale_in_place(m_mat, v);
 }
 
-inline void TMatrix::clear_rotation_scale() { m_mat.inset(mat3(identity)); }
-
-inline void TMatrix::set_column(size_t col, vec3 const& v) {
-    m_mat[col] = vec4{ v.x, v.y, v.z, 0 };
+inline void Transformation::scale(float f) {
+    dlal::scale_in_place(m_mat, vec3 { f, f, f });
 }
 
-inline void TMatrix::set_column(size_t col, vec4 const& v) {
+inline void Transformation::clear_rotation_scale() {
+    m_mat.inset(mat3(identity));
+}
+
+inline void Transformation::set_column(size_t col, vec3 const& v) {
+    m_mat[col] = vec4 { v.x, v.y, v.z, 0 };
+}
+
+inline void Transformation::set_column(size_t col, vec4 const& v) {
     m_mat[col] = vec4(v);
 }
 
 
-inline vec4 TMatrix::column(size_t col) const { return m_mat[col]; }
-
-inline void TMatrix::set_row(size_t row, vec3 const& v) {
-    set_row(row, vec4{ v.x, v.y, v.z, 0 });
+inline vec4 Transformation::column(size_t col) const {
+    return m_mat[col];
 }
 
-inline void TMatrix::set_row(size_t row, vec4 const& v) {
+inline void Transformation::set_row(size_t row, vec3 const& v) {
+    set_row(row, vec4 { v.x, v.y, v.z, 0 });
+}
+
+inline void Transformation::set_row(size_t row, vec4 const& v) {
     m_mat[0][row] = v.x;
     m_mat[1][row] = v.y;
     m_mat[2][row] = v.z;
     m_mat[3][row] = v.w;
 }
 
-inline vec4 TMatrix::row(size_t row) const {
-    return vec4{ m_mat[0][row], m_mat[1][row], m_mat[2][row], m_mat[3][row] };
+inline vec4 Transformation::row(size_t row) const {
+    return vec4 { m_mat[0][row], m_mat[1][row], m_mat[2][row], m_mat[3][row] };
 }
 
-inline TMatrix TMatrix::inverted() const {
-    return TMatrix(dct::inverse(m_mat));
+inline Transformation Transformation::inverted() const {
+    return Transformation(dlal::inverse(m_mat));
 }
 
-inline void TMatrix::invert() { m_mat = inverse(m_mat); }
-
-inline TMatrix TMatrix::transposed() const {
-    return TMatrix(dct::transpose(m_mat));
+inline void Transformation::invert() {
+    m_mat = inverse(m_mat);
 }
 
-inline void TMatrix::transpose() { m_mat = dct::transpose(m_mat); }
-
-
-inline vec3 TMatrix::operator*(vec3 const& v) const {
-    auto const r = operator*(vec4{ v.x, v.y, v.z, 1 });
-    return vec3{ r.x, r.y, r.z } / r.w;
+inline Transformation Transformation::transposed() const {
+    return Transformation(dlal::transpose(m_mat));
 }
 
-inline vec4 TMatrix::operator*(vec4 const& v) const { return m_mat * v; }
-
-inline TMatrix TMatrix::operator*(TMatrix const& m) const {
-    return TMatrix(m_mat * m.m_mat);
+inline void Transformation::transpose() {
+    m_mat = dlal::transpose(m_mat);
 }
 
-inline vec3 TMatrix::rotate_scale_only(vec3 const& v) const {
+
+inline vec3 Transformation::operator*(vec3 const& v) const {
+    auto const r = operator*(vec4 { v.x, v.y, v.z, 1 });
+    return vec3 { r.x, r.y, r.z } / r.w;
+}
+
+inline vec4 Transformation::operator*(vec4 const& v) const {
+    return m_mat * v;
+}
+
+inline Transformation Transformation::operator*(Transformation const& m) const {
+    return Transformation(m_mat * m.m_mat);
+}
+
+inline vec3 Transformation::rotate_scale_only(vec3 const& v) const {
     mat3 const lm = mat3(m_mat);
     return lm * v;
 }
 
-inline TMatrix::operator mat3() const { return mat3(m_mat); }
+inline Transformation::operator mat3() const {
+    return mat3(m_mat);
+}
 
-inline TMatrix::operator mat4() const { return m_mat; }
+inline Transformation::operator mat4() const {
+    return m_mat;
+}
 
-inline TMatrix::operator std::array<float, 16>() const {
+inline Transformation::operator std::array<float, 16>() const {
     static_assert(sizeof(mat4) == sizeof(std::array<float, 16>), "");
     return *reinterpret_cast<std::array<float, 16> const*>(&m_mat);
 }
 
-inline float* TMatrix::data() { return dct::data(m_mat); }
+inline float* Transformation::data() {
+    return dlal::data(m_mat);
+}
 
-inline float const* TMatrix::data() const { return dct::data(m_mat); }
+inline float const* Transformation::data() const {
+    return dlal::data(m_mat);
+}
 
 //
 
-inline TMatrix
+inline Transformation
 make_perspective_matrix_lh(float fovy, float aspect, float zNear, float zFar) {
     assert(aspect > 0.0f);
     assert((zFar - zNear) > 0.0f);
@@ -2932,15 +2962,15 @@ make_perspective_matrix_lh(float fovy, float aspect, float zNear, float zFar) {
     mat[2][2] = zFar / (zFar - zNear);
     mat[3][2] = -(zFar * zNear) / (zFar - zNear);
 
-    return TMatrix(mat);
+    return Transformation(mat);
 }
 
-inline TMatrix make_frustum_matrix_lh(float left,
-                                      float right,
-                                      float bottom,
-                                      float top,
-                                      float near,
-                                      float far) {
+inline Transformation make_frustum_matrix_lh(float left,
+                                             float right,
+                                             float bottom,
+                                             float top,
+                                             float near,
+                                             float far) {
     auto mat  = mat4(0);
     mat[0][0] = 2.0f * near / (right - left);
     mat[1][1] = 2.0f * near / (top - bottom);
@@ -2949,15 +2979,15 @@ inline TMatrix make_frustum_matrix_lh(float left,
     mat[2][2] = far / (far - near);
     mat[2][3] = 1;
     mat[3][2] = -(far * near) / (far - near);
-    return TMatrix(mat);
+    return Transformation(mat);
 }
 
-inline TMatrix make_ortho_matrix_lh(float left,
-                                    float right,
-                                    float bottom,
-                                    float top,
-                                    float zNear,
-                                    float zFar) {
+inline Transformation make_ortho_matrix_lh(float left,
+                                           float right,
+                                           float bottom,
+                                           float top,
+                                           float zNear,
+                                           float zFar) {
     auto mat  = mat4(0);
     mat[0][0] = 2.0f / (right - left);
     mat[1][1] = 2.0f / (top - bottom);
@@ -2966,10 +2996,10 @@ inline TMatrix make_ortho_matrix_lh(float left,
     mat[3][0] = -(right + left) / (right - left);
     mat[3][1] = -(top + bottom) / (top - bottom);
     mat[3][2] = -(zNear) / (zFar - zNear);
-    return TMatrix(mat);
+    return Transformation(mat);
 }
 
-inline TMatrix
+inline Transformation
 make_look_at_lh(vec3 const& eye, vec3 const& center, vec3 const& up) {
     vec3 const f(normalize(center - eye));
     vec3 const s(normalize(cross(up, f)));
@@ -2988,14 +3018,9 @@ make_look_at_lh(vec3 const& eye, vec3 const& center, vec3 const& up) {
     mat[3][0] = -dot(s, eye);
     mat[3][1] = -dot(u, eye);
     mat[3][2] = -dot(f, eye);
-    return TMatrix(mat);
+    return Transformation(mat);
 }
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_TMATRIX_H
-#ifndef LINEAR_ALGEBRA_H
-#define LINEAR_ALGEBRA_H
-
-
-#endif // LINEAR_ALGEBRA_H

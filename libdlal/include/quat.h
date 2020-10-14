@@ -6,7 +6,7 @@
 
 #include "vec_trig.h"
 
-namespace dct {
+namespace dlal {
 
 ///
 /// \brief The quaternion class models a rotation
@@ -22,16 +22,16 @@ struct quaternion {
 
 public:
     /// \brief Initialize quaternion to zero
-    quaternion() : storage{ 0, 0, 0, 1 } {}
+    quaternion() : storage { 0, 0, 0, 1 } { }
 
     /// \brief Initialize quaternion from loose values. W is the scalar.
-    quaternion(T x, T y, T z, T w) : storage{ x, y, z, w } {}
+    quaternion(T x, T y, T z, T w) : storage { x, y, z, w } { }
 
     /// \brief Initialize quaternion from vector and scalar.
-    quaternion(T w, vec<T, 3> const& v) : storage{ v.x, v.y, v.z, w } {}
+    quaternion(T w, vec<T, 3> const& v) : storage { v.x, v.y, v.z, w } { }
 
     /// \brief Initialize quaternion from a vector; w should be the scalar.
-    explicit quaternion(vec<T, 4> const& f) : storage(f) {}
+    explicit quaternion(vec<T, 4> const& f) : storage(f) { }
 
 public:
     /// \brief Convert to a vector
@@ -63,16 +63,16 @@ quaternion<T> operator*(quaternion<T> const& q, T scalar) {
 
 template <class T>
 quaternion<T> operator*(quaternion<T> const& q, quaternion<T> const& r) {
-    static constexpr dct::vec<T, 4> mask1{ 1, 1, -1, -1 };
-    static constexpr dct::vec<T, 4> mask2{ -1, 1, 1, -1 };
-    static constexpr dct::vec<T, 4> mask3{ 1, -1, 1, -1 };
+    static constexpr dlal::vec<T, 4> mask1 { 1, 1, -1, -1 };
+    static constexpr dlal::vec<T, 4> mask2 { -1, 1, 1, -1 };
+    static constexpr dlal::vec<T, 4> mask3 { 1, -1, 1, -1 };
 
-    dct::vec<T, 4> p1 = r.storage.w * q.storage;
-    dct::vec<T, 4> p2 = mask1 * r.storage.x * q.storage.wzyx;
-    dct::vec<T, 4> p3 = mask2 * r.storage.y * q.storage.zwxy;
-    dct::vec<T, 4> p4 = mask3 * r.storage.z * q.storage.yxwz;
+    dlal::vec<T, 4> p1 = r.storage.w * q.storage;
+    dlal::vec<T, 4> p2 = mask1 * r.storage.x * q.storage.wzyx;
+    dlal::vec<T, 4> p3 = mask2 * r.storage.y * q.storage.zwxy;
+    dlal::vec<T, 4> p4 = mask3 * r.storage.z * q.storage.yxwz;
 
-    return dct::quat(p1 + p2 + p3 + p4);
+    return dlal::quat(p1 + p2 + p3 + p4);
 }
 
 template <class T>
@@ -150,7 +150,7 @@ mat<T, 4, 4> mat4_from_unit_quaternion(quaternion<T> const& q) {
     ret[0] = vector_detail::v3to4(m3[0]);
     ret[1] = vector_detail::v3to4(m3[1]);
     ret[2] = vector_detail::v3to4(m3[2]);
-    ret[3] = vec4{ 0, 0, 0, 1 };
+    ret[3] = vec4 { 0, 0, 0, 1 };
 
     ret[0].w = 0;
     ret[1].w = 0;
@@ -217,7 +217,7 @@ template <class T>
 quaternion<T> rotation_from_to(vec<T, 3> const& from, vec<T, 3> const& to) {
     vec<T, 3> const w = cross(from, to);
 
-    vec<T, 4> lq{ w.x, w.y, w.z, dot(from, to) };
+    vec<T, 4> lq { w.x, w.y, w.z, dot(from, to) };
 
     lq.w += dot(lq, lq);
     return normalize(quaternion<T>(lq));
@@ -233,7 +233,7 @@ template <class T>
 quaternion<T> look_at_lh(vec<T, 3> const& norm_direction,
                          vec<T, 3> const& norm_up) {
     if (std::abs(dot(norm_direction, norm_up)) >= 1) {
-        return rotation_from_to(vec<T, 3>{ 0, 0, -1 }, norm_direction);
+        return rotation_from_to(vec<T, 3> { 0, 0, -1 }, norm_direction);
     }
 
     mat<T, 3, 3> ret;
@@ -272,6 +272,6 @@ quaternion<T> from_angle_axis(T angle, vec<T, 3> axis) {
 }
 
 
-} // namespace dct
+} // namespace dlal
 
 #endif // QUAT_H

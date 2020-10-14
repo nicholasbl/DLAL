@@ -3,7 +3,7 @@
 
 #include "mat.h"
 
-namespace dct {
+namespace dlal {
 
 template <class T, size_t C, size_t R>
 mat<T, R, C> transpose(mat<T, C, R> const& m) {
@@ -100,10 +100,10 @@ inline T determinant(mat<T, 4, 4> const& m) {
     T const e = m[2][0] * m[3][2] - m[3][0] * m[2][2];
     T const f = m[2][0] * m[3][1] - m[3][0] * m[2][1];
 
-    vec<T, 4> const coeffs{ +(m[1][1] * a - m[1][2] * b + m[1][3] * c),
-                            -(m[1][0] * a - m[1][2] * d + m[1][3] * e),
-                            +(m[1][0] * b - m[1][1] * d + m[1][3] * f),
-                            -(m[1][0] * c - m[1][1] * e + m[1][2] * f) };
+    vec<T, 4> const coeffs { +(m[1][1] * a - m[1][2] * b + m[1][3] * c),
+                             -(m[1][0] * a - m[1][2] * d + m[1][3] * e),
+                             +(m[1][0] * b - m[1][1] * d + m[1][3] * f),
+                             -(m[1][0] * c - m[1][1] * e + m[1][2] * f) };
 
     return component_sum(m[0] * coeffs);
 }
@@ -153,8 +153,12 @@ inline vec4 _matrix2x2_mult_adj(vec4 vec1, vec4 vec2) {
 
 namespace matrix_detail {
 
-inline auto extract_a(vec4 a, vec4 b) { return _mm_movelh_ps(a, b); }
-inline auto extract_b(vec4 a, vec4 b) { return _mm_movehl_ps(b, a); }
+inline auto extract_a(vec4 a, vec4 b) {
+    return _mm_movelh_ps(a, b);
+}
+inline auto extract_b(vec4 a, vec4 b) {
+    return _mm_movehl_ps(b, a);
+}
 
 } // namespace matrix_detail
 
@@ -177,9 +181,9 @@ inline auto transform_inverse(mat4 const& m) {
     size_sqr += ret[1] * ret[1];
     size_sqr += ret[2] * ret[2];
 
-    __m128 one{ 1.0f };
+    __m128 one { 1.0f };
     __m128 rSizeSqr = _mm_blendv_ps(
-        (one / size_sqr), one, _mm_cmplt_ps(size_sqr, __m128{ SMALL_VALUE }));
+        (one / size_sqr), one, _mm_cmplt_ps(size_sqr, __m128 { SMALL_VALUE }));
 
     ret[0] = (ret[0] * rSizeSqr);
     ret[1] = (ret[1] * rSizeSqr);
@@ -245,6 +249,6 @@ inline auto inverse(mat4 const& m) {
     return ret;
 }
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_MATRIX_OPERATIONS_H

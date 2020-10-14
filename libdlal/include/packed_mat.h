@@ -3,7 +3,7 @@
 
 #include "mat.h"
 
-namespace dct {
+namespace dlal {
 
 ///
 /// \brief The PackedMatrix class defines a column-major, size restricted
@@ -40,7 +40,7 @@ public: // Basics
 
 public:
     /// \brief Initialize all cells to zero
-    constexpr packed_mat() : storage({}) {}
+    constexpr packed_mat() : storage({}) { }
 
     /// \brief Default copy constructor
     constexpr packed_mat(packed_mat const&) = default;
@@ -60,7 +60,7 @@ public:
     }
 
     /// \brief Create a matrix from an array of values.
-    constexpr packed_mat(std::array<float, C * R> const& a) : storage(a) {}
+    constexpr packed_mat(std::array<float, C * R> const& a) : storage(a) { }
 
     /// \brief Initialize all cells to the given value
     constexpr packed_mat(T value) { storage.fill(value); }
@@ -108,6 +108,6 @@ using packed_mat42 = packed_mat<float, 4, 2>;
 using packed_mat43 = packed_mat<float, 4, 3>;
 using packed_mat44 = packed_mat<float, 4, 4>;
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_PACKED_MAT_H

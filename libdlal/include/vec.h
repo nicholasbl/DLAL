@@ -7,7 +7,7 @@
 
 #include <smmintrin.h>
 
-namespace dct {
+namespace dlal {
 
 /// Notes:
 /// Vector equality uses -1 (all bits set)! If you want to use conditionals,
@@ -16,19 +16,19 @@ namespace dct {
 ///
 
 #ifndef __SSE4_1__
-#error SSE 4.1 Support is required
+#    error SSE 4.1 Support is required
 #endif
 
 #ifndef __clang__
-#error Only the CLANG compiler is supported at this time
+#    error Only the CLANG compiler is supported at this time
 #endif
 
 #ifndef __x86_64__
-#warning Only tested on 64 bit archs at this time
+#    warning Only tested on 64 bit archs at this time
 #endif
 
 // Define how OpenCL views true and false
-#define VEC_TRUE -1
+#define VEC_TRUE  -1
 #define VEC_FALSE 0
 
 // We require extended vectors
@@ -85,24 +85,9 @@ namespace vector_detail {
 
 // Shuffle interface.
 // TODO: clean up
-#ifdef __clang__
 #define SHUFFLE(A, B, X, Y, Z, W) __builtin_shufflevector(A, B, X, Y, Z, W)
-#else
-#define SHUFFLE(A, B, X, Y, Z, W)                                              \
-    __builtin_shuffle(A, B, dct::vector_detail::ivec4{ X, Y, Z, W })
-#endif
 
 // constexpr versions of these common functions
-
-template <class T>
-constexpr T cmin(T a, T b) {
-    return (a < b) ? a : b;
-}
-
-template <class T>
-constexpr T cmax(T a, T b) {
-    return (a > b) ? a : b;
-}
 
 template <class T>
 constexpr T cabs(T a) {
@@ -112,15 +97,23 @@ constexpr T cabs(T a) {
 ///
 /// \brief Convert a bool to an OpenCL boolean-int.
 ///
-inline int bool_to_vec_bool(bool b) { return b * -1; }
+inline int bool_to_vec_bool(bool b) {
+    return b * -1;
+}
 
-inline vec4 v3to4(vec3 a) { return __builtin_shufflevector(a, a, 0, 1, 2, -1); }
+inline vec4 v3to4(vec3 a) {
+    return __builtin_shufflevector(a, a, 0, 1, 2, -1);
+}
 inline vec4 v2to4(vec2 a) {
     return __builtin_shufflevector(a, a, 0, 1, -1, -1);
 }
 
-inline vec2 v4to2(vec4 a) { return __builtin_shufflevector(a, a, 0, 1); }
-inline vec3 v4to3(vec4 a) { return __builtin_shufflevector(a, a, 0, 1, 2); }
+inline vec2 v4to2(vec4 a) {
+    return __builtin_shufflevector(a, a, 0, 1);
+}
+inline vec3 v4to3(vec4 a) {
+    return __builtin_shufflevector(a, a, 0, 1, 2);
+}
 
 } // namespace vector_detail
 
@@ -137,27 +130,27 @@ vec<T, N> new_vec(std::array<T, N> a) {
 
 template <class T>
 vec<T, 4> new_vec(vec<T, 3> a, T b) {
-    return vec<T, 4>{ a.x, a.y, a.z, b };
+    return vec<T, 4> { a.x, a.y, a.z, b };
 }
 
 template <class T>
 vec<T, 4> new_vec(vec<T, 2> a, vec<T, 2> b) {
-    return vec<T, 4>{ a.x, a.y, b.x, b.y };
+    return vec<T, 4> { a.x, a.y, b.x, b.y };
 }
 
 template <class T>
 vec<T, 4> new_vec(vec<T, 2> a, T b, T c) {
-    return vec<T, 4>{ a.x, a.y, b, c };
+    return vec<T, 4> { a.x, a.y, b, c };
 }
 
 template <class T>
 vec<T, 4> new_vec(T a, vec<T, 2> b, T c) {
-    return vec<T, 4>{ a, b.x, b.y, c };
+    return vec<T, 4> { a, b.x, b.y, c };
 }
 
 template <class T>
 vec<T, 4> new_vec(T a, T b, vec<T, 2> c) {
-    return vec<T, 4>{ a, b, c.x, c.y };
+    return vec<T, 4> { a, b, c.x, c.y };
 }
 
 inline vec<int, 4> new_vec(int a, int b, int c, int d) {
@@ -169,10 +162,10 @@ inline vec<int, 4> new_vec(int a, int b, int c, int d) {
 
 inline vec<int, 4> new_vec(bool a, bool b, bool c, bool d) {
     using namespace vector_detail;
-    return vec<int, 4>{ bool_to_vec_bool(a),
-                        bool_to_vec_bool(b),
-                        bool_to_vec_bool(c),
-                        bool_to_vec_bool(d) };
+    return vec<int, 4> { bool_to_vec_bool(a),
+                         bool_to_vec_bool(b),
+                         bool_to_vec_bool(c),
+                         bool_to_vec_bool(d) };
 }
 
 // Operations ==================================================================
@@ -197,7 +190,7 @@ float dot(vec<T, 3> a, vec<T, 3> b) {
 }
 
 ///
-/// \brief Dot product specialization for arb vec3
+/// \brief Dot product specialization for arb vec4
 ///
 template <class T>
 float dot(vec<T, 4> a, vec<T, 4> b) {
@@ -395,15 +388,18 @@ vec<T, N> min(vec<T, N> const& a, vec<T, N> const& b) {
     vec<T, N> ret;
     using namespace vector_detail;
     if constexpr (N == 1) {
-        return vec<T, N>{ cmin(a.x, b.x) };
+        return vec<T, N> { std::min(a.x, b.x) };
     } else if constexpr (N == 2) {
-        return vec<T, N>{ cmin(a.x, b.x), cmin(a.y, b.y) };
+        return vec<T, N> { std::min(a.x, b.x), std::min(a.y, b.y) };
     } else if constexpr (N == 3) {
-        return vec<T, N>{ cmin(a.x, b.x), cmin(a.y, b.y), cmin(a.z, b.z) };
+        return vec<T, N> { std::min(a.x, b.x),
+                           std::min(a.y, b.y),
+                           std::min(a.z, b.z) };
     } else if constexpr (N == 4) {
-        return vec<T, N>{
-            cmin(a.x, b.x), cmin(a.y, b.y), cmin(a.z, b.z), cmin(a.w, b.w)
-        };
+        return vec<T, N> { std::min(a.x, b.x),
+                           std::min(a.y, b.y),
+                           std::min(a.z, b.z),
+                           std::min(a.w, b.w) };
     }
     return ret;
 }
@@ -420,7 +416,9 @@ inline vec3 min(vec3 const& a, vec3 const& b) {
     return v4to3(tmp);
 }
 
-inline vec4 min(vec4 const& a, vec4 const& b) { return _mm_min_ps(a, b); }
+inline vec4 min(vec4 const& a, vec4 const& b) {
+    return _mm_min_ps(a, b);
+}
 
 ///
 /// \brief Compute the component-wise max between two vectors.
@@ -430,19 +428,19 @@ vec<T, N> max(vec<T, N> const& a, vec<T, N> const& b) {
     vec<T, N> ret;
     using namespace vector_detail;
     if constexpr (N == 1) {
-        ret.x = cmax(a.x, b.x);
+        ret.x = std::max(a.x, b.x);
     } else if constexpr (N == 2) {
-        ret.x = cmax(a.x, b.x);
-        ret.y = cmax(a.y, b.y);
+        ret.x = std::max(a.x, b.x);
+        ret.y = std::max(a.y, b.y);
     } else if constexpr (N == 3) {
-        ret.x = cmax(a.x, b.x);
-        ret.y = cmax(a.y, b.y);
-        ret.z = cmax(a.z, b.z);
+        ret.x = std::max(a.x, b.x);
+        ret.y = std::max(a.y, b.y);
+        ret.z = std::max(a.z, b.z);
     } else if constexpr (N == 4) {
-        ret.x = cmax(a.x, b.x);
-        ret.y = cmax(a.y, b.y);
-        ret.z = cmax(a.z, b.z);
-        ret.w = cmax(a.w, b.w);
+        ret.x = std::max(a.x, b.x);
+        ret.y = std::max(a.y, b.y);
+        ret.z = std::max(a.z, b.z);
+        ret.w = std::max(a.w, b.w);
     }
     return ret;
 }
@@ -459,7 +457,9 @@ inline vec3 max(vec3 const& a, vec3 const& b) {
     return v4to3(tmp);
 }
 
-inline vec4 max(vec4 const& a, vec4 const& b) { return _mm_max_ps(a, b); }
+inline vec4 max(vec4 const& a, vec4 const& b) {
+    return _mm_max_ps(a, b);
+}
 
 ///
 /// \brief Compute the min between all components of a vector.
@@ -470,11 +470,11 @@ T component_min(vec<T, N> const& a) {
     if constexpr (N == 1) {
         return a.x;
     } else if constexpr (N == 2) {
-        return cmin(a.x, a.y);
+        return std::min(a.x, a.y);
     } else if constexpr (N == 3) {
-        return cmin(cmin(a.x, a.y), a.z);
+        return std::min(std::min(a.x, a.y), a.z);
     } else if constexpr (N == 4) {
-        return cmin(cmin(a.x, a.y), cmin(a.z, a.w));
+        return std::min(std::min(a.x, a.y), std::min(a.z, a.w));
     }
 }
 
@@ -487,11 +487,11 @@ T component_max(vec<T, N> const& a) {
     if constexpr (N == 1) {
         return a.x;
     } else if constexpr (N == 2) {
-        return cmax(a.x, a.y);
+        return std::max(a.x, a.y);
     } else if constexpr (N == 3) {
-        return cmax(cmax(a.x, a.y), a.z);
+        return std::max(std::max(a.x, a.y), a.z);
     } else if constexpr (N == 4) {
-        return cmax(cmax(a.x, a.y), cmax(a.z, a.w));
+        return std::max(std::max(a.x, a.y), std::max(a.z, a.w));
     }
 }
 
@@ -616,7 +616,9 @@ vec<T, N> floor(vec<T, N> const& a) {
     return ret;
 }
 
-inline vec4 floor(vec4 const& a) { return _mm_floor_ps(a); }
+inline vec4 floor(vec4 const& a) {
+    return _mm_floor_ps(a);
+}
 inline vec3 floor(vec3 const& a) {
     using namespace vector_detail;
     return v4to3(floor(v3to4(a)));
@@ -652,7 +654,9 @@ vec<T, N> ceil(vec<T, N> const& a) {
     return ret;
 }
 
-inline vec4 ceil(vec4 const& a) { return _mm_ceil_ps(a); }
+inline vec4 ceil(vec4 const& a) {
+    return _mm_ceil_ps(a);
+}
 inline vec3 ceil(vec3 const& a) {
     using namespace vector_detail;
     return v4to3(ceil(v3to4(a)));
@@ -714,6 +718,6 @@ vec<T, N> mix(vec<T, N> const& a, vec<T, N> const& b, vec<T, N> const& t) {
     return a + ((b - a) * t);
 }
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_VECTOR_DETAIL_H

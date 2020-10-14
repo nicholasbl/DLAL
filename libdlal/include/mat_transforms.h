@@ -5,7 +5,7 @@
 
 #include <cmath>
 
-namespace dct {
+namespace dlal {
 
 ///
 /// \brief Add a translation to a matrix, in place
@@ -91,6 +91,6 @@ void scale_in_place(mat<T, 4, 4>& m, vec<T, 3> const& v) {
     m[3] = m[3];
 }
 
-} // namespace dct
+} // namespace dlal
 
 #endif // LINALG_MAT_TRANSFORM_H

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(libdctlin
+project(libdlal
     VERSION 0.0.1
     DESCRIPTION "A header only SSE4.1 powered graphics-focused linear algebra library"
     LANGUAGES CXX)
@@ -8,13 +8,12 @@ project(libdctlin
 option(DCTLIN_BUILD_TESTS "Build test executables" OFF)
 option(DCTLIN_BUILD_DOCS  "Build documentation"    OFF)
 
-add_library(${PROJECT_NAME} INTERFACE)
+add_library(libdlal INTERFACE)
 
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
+target_compile_features(libdlal INTERFACE cxx_std_17)
 
-target_sources(${PROJECT_NAME}
+target_sources(libdlal
     INTERFACE
-    include/linear_algebra.h
     include/mat.h
     include/mat_detail.h
     include/mat_operations.h
@@ -22,15 +21,15 @@ target_sources(${PROJECT_NAME}
     include/packed_mat.h
     include/packed_vec.h
     include/quat.h
-    include/tmatrix.h
+    include/transformation.h
     include/vec.h
     include/vec_trig.h
     )
 
-target_include_directories(${PROJECT_NAME} INTERFACE include/)
+target_include_directories(libdlal INTERFACE include/)
 
 
-if (DCTLIN_BUILD_TESTS MATCHES "ON")
+if (DCTLIN_BUILD_TESTS)
     find_package(GLM 0.9.2)
 
     add_executable(dctlin_tests
@@ -47,7 +46,7 @@ if (DCTLIN_BUILD_TESTS MATCHES "ON")
     
     list(APPEND cppflags -fsanitize=address)
                     
-    target_link_libraries(dctlin_tests ${PROJECT_NAME})
+    target_link_libraries(dctlin_tests libdlal)
     target_compile_options(dctlin_tests PRIVATE ${cppflags})
     target_link_options(dctlin_tests PRIVATE ${cppflags})
 endif()

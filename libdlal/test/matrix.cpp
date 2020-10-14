@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-using namespace dct;
+using namespace dlal;
 
 template <class T, size_t C, size_t R, class Function>
 bool binary_test(std::array<T, C * R> const& a,
@@ -258,7 +258,7 @@ TEST_CASE("Matrix Library") {
 
             REQUIRE(binary_vector_2<float>(
                 mat4(a_src),
-                dct::new_vec(b_src),
+                dlal::new_vec(b_src),
                 [](auto const& a, auto const& b) { return a * b; }));
         }
 
@@ -269,7 +269,7 @@ TEST_CASE("Matrix Library") {
 
             REQUIRE(binary_vector_2<float>(
                 mat3(a_src),
-                dct::new_vec(b_src),
+                dlal::new_vec(b_src),
                 [](auto const& a, auto const& b) { return a * b; }));
         }
     }
