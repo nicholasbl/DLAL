@@ -7,6 +7,7 @@
 
 #include <smmintrin.h>
 
+
 namespace dlal {
 
 /// Notes:
@@ -17,6 +18,10 @@ namespace dlal {
 
 #ifndef __SSE4_1__
 #    error SSE 4.1 Support is required
+#endif
+
+#ifndef __AVX__
+#    error AVX Support is required
 #endif
 
 #ifndef __clang__
@@ -101,21 +106,68 @@ inline int bool_to_vec_bool(bool b) {
     return b * -1;
 }
 
-inline vec4 v3to4(vec3 a) {
-    return __builtin_shufflevector(a, a, 0, 1, 2, -1);
-}
-inline vec4 v2to4(vec2 a) {
-    return __builtin_shufflevector(a, a, 0, 1, -1, -1);
+template <int N>
+inline vec4 vNto4(vec<float, N> a) {
+    static_assert(N >= 1 and N <= 4);
+    if constexpr (N == 1) {
+        return __builtin_shufflevector(a, a, 0, -1, -1, -1);
+    } else if constexpr (N == 2) {
+        return __builtin_shufflevector(a, a, 0, 1, -1, -1);
+    } else if constexpr (N == 3) {
+        return __builtin_shufflevector(a, a, 0, 1, 2, -1);
+    } else {
+        return a;
+    }
 }
 
-inline vec2 v4to2(vec4 a) {
-    return __builtin_shufflevector(a, a, 0, 1);
-}
-inline vec3 v4to3(vec4 a) {
-    return __builtin_shufflevector(a, a, 0, 1, 2);
+template <int N>
+inline vec<float, N> v4toN(vec4 a) {
+    static_assert(N >= 1 and N <= 4);
+    if constexpr (N == 1) {
+        return __builtin_shufflevector(a, a, 0);
+    } else if constexpr (N == 2) {
+        return __builtin_shufflevector(a, a, 0, 1);
+    } else if constexpr (N == 3) {
+        return __builtin_shufflevector(a, a, 0, 1, 2);
+    } else {
+        return a;
+    }
 }
 
 } // namespace vector_detail
+
+
+// Helper Defines ==============================================================
+
+#define SLOW_VECTOR_OP(NAME, OP)                                               \
+    template <class T, int N>                                                  \
+    vec<T, N> NAME(vec<T, N> const& a) {                                       \
+        vec<T, N> ret;                                                         \
+        if constexpr (N == 1) {                                                \
+            ret.x = OP(a.x);                                                   \
+        } else if constexpr (N == 2) {                                         \
+            ret.x = OP(a.x);                                                   \
+            ret.y = OP(a.y);                                                   \
+        } else if constexpr (N == 3) {                                         \
+            ret.x = OP(a.x);                                                   \
+            ret.y = OP(a.y);                                                   \
+            ret.z = OP(a.z);                                                   \
+        } else if constexpr (N == 4) {                                         \
+            ret.x = OP(a.x);                                                   \
+            ret.y = OP(a.y);                                                   \
+            ret.z = OP(a.z);                                                   \
+            ret.w = OP(a.w);                                                   \
+        }                                                                      \
+        return ret;                                                            \
+    }
+
+#define INTRINSIC_4F_OP(NAME, FUNC)                                            \
+    template <size_t N>                                                        \
+    vec<float, N> NAME(vec<float, N> a, vec<float, N> b) {                     \
+        using namespace vector_detail;                                         \
+        return v4toN<N>(FUNC(vNto4(a), vNto4(b)));                             \
+    }
+
 
 // Creation ====================================================================
 
@@ -168,48 +220,64 @@ inline vec<int, 4> new_vec(bool a, bool b, bool c, bool d) {
                          bool_to_vec_bool(d) };
 }
 
-// Operations ==================================================================
+// Operations - Basic Mathematics ==============================================
+
+
+SLOW_VECTOR_OP(sqrt, std::sqrt)
+INTRINSIC_4F_OP(sqrt, _mm_sqrt_ps);
+
+SLOW_VECTOR_OP(acos, std::acos)
+INTRINSIC_4F_OP(acos, _mm_acos_ps);
+
+SLOW_VECTOR_OP(cos, std::cos)
+INTRINSIC_4F_OP(cos, _mm_cos_ps);
+
+SLOW_VECTOR_OP(asin, std::asin)
+INTRINSIC_4F_OP(asin, _mm_asin_ps);
+
+SLOW_VECTOR_OP(sin, std::sin)
+INTRINSIC_4F_OP(sin, _mm_sin_ps);
+
+SLOW_VECTOR_OP(atan, std::atan)
+INTRINSIC_4F_OP(atan, _mm_atan_ps);
+
+SLOW_VECTOR_OP(tan, std::tan)
+INTRINSIC_4F_OP(tan, _mm_tan_ps);
+
+SLOW_VECTOR_OP(exp, std::exp)
+INTRINSIC_4F_OP(exp, _mm_exp_ps);
+
+SLOW_VECTOR_OP(log, std::log)
+INTRINSIC_4F_OP(log, _mm_log_ps);
 
 
 ///
-/// \brief Dot product specialization for arb vec2
+/// \brief Compute the sum of all components of a vector.
 ///
-template <class T>
-float dot(vec<T, 2> a, vec<T, 2> b) {
-    auto r = a * b;
-    return r.x + r.y;
+template <class T, size_t N>
+T component_sum(vec<T, N> const& a) {
+    using namespace vector_detail;
+    if constexpr (N == 1) {
+        return a.x;
+    } else if constexpr (N == 2) {
+        return a.x + a.y;
+    } else if constexpr (N == 3) {
+        return a.x + a.y + a.z;
+    } else if constexpr (N == 4) {
+        return a.x + a.y + a.z + a.w;
+    }
 }
 
-///
-/// \brief Dot product specialization for arb vec3
-///
-template <class T>
-float dot(vec<T, 3> a, vec<T, 3> b) {
-    auto r = a * b;
-    return r.x + r.y + r.z;
-}
+// Operations - Dot Product ====================================================
+
 
 ///
-/// \brief Dot product specialization for arb vec4
+/// \brief Dot product for arb vector
 ///
-template <class T>
-float dot(vec<T, 4> a, vec<T, 4> b) {
+template <class T, size_t N>
+float dot(vec<T, N> a, vec<T, N> b) {
     auto r = a * b;
-    return r.x + r.y + r.z + r.w;
-}
-
-///
-/// \brief Dot product specialization for vec4
-///
-inline float dot(vec4 a, vec4 b) {
-    // documentation and testing shows this is faster than dp or hadd
-    __m128 mult, shuf, sums;
-    mult = _mm_mul_ps(a, b);
-    shuf = _mm_movehdup_ps(mult);
-    sums = _mm_add_ps(mult, shuf);
-    shuf = _mm_movehl_ps(shuf, sums);
-    sums = _mm_add_ss(sums, shuf);
-    return _mm_cvtss_f32(sums);
+    return component_sum(r);
 }
 
 ///
@@ -217,13 +285,27 @@ inline float dot(vec4 a, vec4 b) {
 ///
 inline vec4 dot_vec(vec4 a, vec4 b) {
     // documentation and testing shows this is faster than dp or hadd
+#ifndef __AVX__
     __m128 mult, shuf, sums;
     mult = _mm_mul_ps(a, b);
     shuf = _mm_movehdup_ps(mult);
     sums = _mm_add_ps(mult, shuf);
     shuf = _mm_movehl_ps(shuf, sums);
     return _mm_add_ss(sums, shuf);
+#else
+    return _mm_dp_ps(a, b, 0xff);
+#endif
 }
+
+///
+/// \brief Dot product specialization for vec4
+///
+inline float dot(vec4 a, vec4 b) {
+    auto sums = dot_vec(a, b);
+    return _mm_cvtss_f32(sums);
+}
+
+// Operations - Cross Product ==================================================
 
 ///
 /// \brief Cross product.
@@ -234,12 +316,22 @@ vec<T, 3> cross(vec<T, 3> const& a, vec<T, 3> const& b) {
     return (a * b.yzx - a.yzx * b).yzx;
 }
 
+// Operations - Length =========================================================
+
 ///
 /// \brief Compute the length of a vector.
 ///
 template <class T, int N>
 T length(vec<T, N> const& a) {
     return std::sqrt(dot(a, a));
+}
+
+
+///
+/// \brief Compute the length of a vector. Specialized for vec4
+///
+inline float length(vec4 const& a) {
+    return _mm_cvtss_f32(sqrt(dot_vec(a, a)));
 }
 
 ///
@@ -249,6 +341,8 @@ template <class T, int N>
 T length_squared(vec<T, N> const& a) {
     return dot(a, a);
 }
+
+// Operations - Distance =======================================================
 
 ///
 /// \brief Compute the distance between two points.
@@ -266,6 +360,8 @@ T distance_squared(vec<T, N> const& a, vec<T, N> const& b) {
     return length_squared(b - a);
 }
 
+// Operations - Normalize ======================================================
+
 ///
 /// \brief Normalize the length of a vector. This does NOT check if the length
 /// of the vector is zero; if so, expect badness.
@@ -275,6 +371,20 @@ vec<T, N> normalize(vec<T, N> const& a) {
     static_assert(std::is_floating_point_v<T>, "Floating point required");
     return a / length(a);
 }
+
+///
+/// \brief Normalize the length of a vector in a quick approximate way. This
+/// does NOT check if the length of the vector is zero; if so, expect badness.
+/// Specialized for vec4
+///
+inline vec4 fast_normalize(vec4 const& a) {
+    auto dp  = dot_vec(a, a);
+    auto imm = _mm_rsqrt_ps(dp);
+    return a * imm;
+}
+
+
+// Operations - Reflect ========================================================
 
 ///
 /// \brief Reflect a vector
@@ -404,20 +514,11 @@ vec<T, N> min(vec<T, N> const& a, vec<T, N> const& b) {
     return ret;
 }
 
-inline vec2 min(vec2 const& a, vec2 const& b) {
+template <size_t N>
+vec<float, N> min(vec<float, N> a, vec<float, N> b) {
     using namespace vector_detail;
-    auto tmp = _mm_min_ps(v2to4(a), v2to4(b));
-    return v4to2(tmp);
-}
-
-inline vec3 min(vec3 const& a, vec3 const& b) {
-    using namespace vector_detail;
-    auto tmp = _mm_min_ps(v3to4(a), v3to4(b));
-    return v4to3(tmp);
-}
-
-inline vec4 min(vec4 const& a, vec4 const& b) {
-    return _mm_min_ps(a, b);
+    auto tmp = _mm_min_ps(vNto4(a), vNto4(b));
+    return v4toN<N>(tmp);
 }
 
 ///
@@ -445,20 +546,11 @@ vec<T, N> max(vec<T, N> const& a, vec<T, N> const& b) {
     return ret;
 }
 
-inline vec2 max(vec2 const& a, vec2 const& b) {
+template <size_t N>
+vec<float, N> max(vec<float, N> a, vec<float, N> b) {
     using namespace vector_detail;
-    auto tmp = _mm_max_ps(v2to4(a), v2to4(b));
-    return v4to2(tmp);
-}
-
-inline vec3 max(vec3 const& a, vec3 const& b) {
-    using namespace vector_detail;
-    auto tmp = _mm_max_ps(v3to4(a), v3to4(b));
-    return v4to3(tmp);
-}
-
-inline vec4 max(vec4 const& a, vec4 const& b) {
-    return _mm_max_ps(a, b);
+    auto tmp = _mm_max_ps(vNto4(a), vNto4(b));
+    return v4toN<N>(tmp);
 }
 
 ///
@@ -495,22 +587,6 @@ T component_max(vec<T, N> const& a) {
     }
 }
 
-///
-/// \brief Compute the sum of all components of a vector.
-///
-template <class T, size_t N>
-T component_sum(vec<T, N> const& a) {
-    using namespace vector_detail;
-    if constexpr (N == 1) {
-        return a.x;
-    } else if constexpr (N == 2) {
-        return a.x + a.y;
-    } else if constexpr (N == 3) {
-        return a.x + a.y + a.z;
-    } else if constexpr (N == 4) {
-        return a.x + a.y + a.z + a.w;
-    }
-}
 
 ///
 /// \brief Round the vector component-wise.
@@ -538,18 +614,10 @@ vec<T, N> round(vec<T, N> const& a) {
     return ret;
 }
 
-inline vec2 round(vec2 const& a) {
+template <size_t N>
+vec<float, N> round(vec<float, N> a) {
     using namespace vector_detail;
-    return v4to2(_mm_round_ps(v2to4(a), _MM_FROUND_TO_NEAREST_INT));
-}
-
-inline vec3 round(vec3 const& a) {
-    using namespace vector_detail;
-    return v4to3(_mm_round_ps(v3to4(a), _MM_FROUND_TO_NEAREST_INT));
-}
-
-inline vec4 round(vec4 const& a) {
-    return _mm_round_ps(a, _MM_FROUND_TO_NEAREST_INT);
+    return v4toN<N>(_mm_round_ps(vNto4(a), _MM_FROUND_TO_NEAREST_INT));
 }
 
 ///
@@ -577,18 +645,13 @@ vec<T, N> abs(vec<T, N> const& a) {
     return ret;
 }
 
-inline vec4 abs(vec4 const& a) {
-    return _mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF)));
-}
 
-inline vec3 abs(vec3 const& a) {
+template <size_t N>
+vec<float, N> abs(vec<float, N> a) {
     using namespace vector_detail;
-    return v4to3(abs(v3to4(a)));
-}
-
-inline vec2 abs(vec2 const& a) {
-    using namespace vector_detail;
-    return v4to2(abs(v2to4(a)));
+    auto tmp =
+        _mm_and_ps(vNto4(a), _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF)));
+    return v4toN<N>(tmp);
 }
 
 ///
@@ -616,17 +679,10 @@ vec<T, N> floor(vec<T, N> const& a) {
     return ret;
 }
 
-inline vec4 floor(vec4 const& a) {
-    return _mm_floor_ps(a);
-}
-inline vec3 floor(vec3 const& a) {
+template <size_t N>
+vec<float, N> floor(vec<float, N> const& a) {
     using namespace vector_detail;
-    return v4to3(floor(v3to4(a)));
-}
-
-inline vec2 floor(vec2 const& a) {
-    using namespace vector_detail;
-    return v4to2(floor(v2to4(a)));
+    return v4toN<N>(_mm_floor_ps(vNto4(a)));
 }
 
 ///
@@ -654,17 +710,10 @@ vec<T, N> ceil(vec<T, N> const& a) {
     return ret;
 }
 
-inline vec4 ceil(vec4 const& a) {
-    return _mm_ceil_ps(a);
-}
-inline vec3 ceil(vec3 const& a) {
+template <size_t N>
+vec<float, N> ceil(vec<float, N> const& a) {
     using namespace vector_detail;
-    return v4to3(ceil(v3to4(a)));
-}
-
-inline vec2 ceil(vec2 const& a) {
-    using namespace vector_detail;
-    return v4to2(ceil(v2to4(a)));
+    return v4toN<N>(_mm_ceil_ps(vNto4(a)));
 }
 
 // Clamp =======================================================================
@@ -717,6 +766,11 @@ template <class T, size_t N>
 vec<T, N> mix(vec<T, N> const& a, vec<T, N> const& b, vec<T, N> const& t) {
     return a + ((b - a) * t);
 }
+
+// Helper Defines ==============================================================
+
+#undef SLOW_VECTOR_OP
+#undef INTRINSIC_4F_OP
 
 } // namespace dlal
 

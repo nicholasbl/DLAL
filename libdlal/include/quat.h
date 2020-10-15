@@ -4,8 +4,6 @@
 #include "mat.h"
 #include "packed_vec.h"
 
-#include "vec_trig.h"
-
 namespace dlal {
 
 ///
@@ -13,6 +11,8 @@ namespace dlal {
 ///
 template <class T>
 struct quaternion {
+    // Why this weirdness? Typing. Just using a vec4 would cause it to alias our
+    // plain vec 4.
     union {
         vec<T, 4> storage; ///< Storage is simd vector
         struct {
@@ -147,9 +147,9 @@ mat<T, 4, 4> mat4_from_unit_quaternion(quaternion<T> const& q) {
 
     mat<T, 4, 4> ret;
 
-    ret[0] = vector_detail::v3to4(m3[0]);
-    ret[1] = vector_detail::v3to4(m3[1]);
-    ret[2] = vector_detail::v3to4(m3[2]);
+    ret[0] = vector_detail::vNto4(m3[0]);
+    ret[1] = vector_detail::vNto4(m3[1]);
+    ret[2] = vector_detail::vNto4(m3[2]);
     ret[3] = vec4 { 0, 0, 0, 1 };
 
     ret[0].w = 0;

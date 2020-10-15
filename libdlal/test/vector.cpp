@@ -444,3 +444,13 @@ TEST_CASE("Vector Library - Operations") {
                    -1.0f));
     }
 }
+
+TEST_CASE("Vector Library - Operations Continued") {
+    SUBCASE("SQRT") {
+        vec4 a { 1.0f, 2.0f, 5.0f, 10.0f };
+        auto b = sqrt(a);
+
+        REQUIRE(is(
+            b, std::sqrt(a.x), std::sqrt(a.y), std::sqrt(a.z), std::sqrt(a.w)));
+    }
+}

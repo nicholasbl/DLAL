@@ -127,7 +127,7 @@ TEST_CASE("quaternion") {
         }));
 
         REQUIRE(quat_check<float>({ 1, -1, 3, 4 }, [](auto q1, auto r1) {
-            return verify(normalize(q1), glm::normalize(r1));
+            return verify(normalize(q1), glm::normalize(r1), .0001);
         }));
     }
 
@@ -196,8 +196,7 @@ TEST_CASE("quaternion") {
 
             auto gquat = glm::rotation(ga, gb);
 
-            REQUIRE(
-                verify(quat, gquat, 2 * std::numeric_limits<float>::epsilon()));
+            REQUIRE(verify(quat, gquat, .00001));
         }
 
         {
@@ -211,8 +210,7 @@ TEST_CASE("quaternion") {
 
             auto gquat = glm::rotation(ga, gb);
 
-            REQUIRE(
-                verify(quat, gquat, 3 * std::numeric_limits<float>::epsilon()));
+            REQUIRE(verify(quat, gquat, .00001));
         }
 
         // look at

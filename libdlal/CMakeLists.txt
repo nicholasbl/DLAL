@@ -5,12 +5,14 @@ project(libdlal
     DESCRIPTION "A header only SSE4.1 powered graphics-focused linear algebra library"
     LANGUAGES CXX)
 
-option(DCTLIN_BUILD_TESTS "Build test executables" OFF)
-option(DCTLIN_BUILD_DOCS  "Build documentation"    OFF)
+option(DCTLIN_BUILD_TESTS "Build test executables"  OFF)
+option(DCTLIN_BUILD_DOCS  "Build documentation"     OFF)
 
 add_library(libdlal INTERFACE)
 
 target_compile_features(libdlal INTERFACE cxx_std_17)
+
+target_compile_options(libdlal INTERFACE -mavx)
 
 target_sources(libdlal
     INTERFACE
@@ -23,7 +25,6 @@ target_sources(libdlal
     include/quat.h
     include/transformation.h
     include/vec.h
-    include/vec_trig.h
     )
 
 target_include_directories(libdlal INTERFACE include/)
